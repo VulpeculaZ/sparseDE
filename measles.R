@@ -1,0 +1,133 @@
+
+source("./sources/mDSIRfn.R")
+source("./sources/sparse.R")
+source("./sources/LS.sparse.R")
+
+library(penalized)
+library(CollocInfer)
+library(deSolve)
+library(nnls)
+
+
+## Real data:
+mDf <- read.csv("./Data/meas_ca_on__1939-89_wk.csv", skip = 3)
+bDf <- read.csv("./Data/bth_ca_on__1921-2002_mn.csv", skip = 5)
+## plot(x = mDf$numdate[mDf$numdate > 1955 & mDf$numdate < 1960], y = mDf$cases[mDf$numdate > 1955 & mDf$numdate < 1960],type = "l")
+
+mTimes <- mDf$numdate[mDf$numdate > 1958 & mDf$numdate < 1963]
+mI <- mDf$cases[mDf$numdate > 1958 & mDf$numdate < 1963]
+tmpMonth <- mDf$month[mDf$numdate > 1958 & mDf$numdate < 1963]
+mB <- rep(0, length(tmpMonth))
+
+for(i in 1:length(tmpMonth)){
+    mB[i] <- bDf[which(bDf$year == floor(mTimes[i]) & bDf$month == tmpMonth[i]),3 ] * 7 / 90
+}
+
+mTimes <- mTimes - 1958
+rr     = c(0,round(max(mTimes)))       #  the range of observations times
+knots  = seq(rr[1],rr[2],2/52)  #  knots at 52 equally spaced values
+norder = 3                      #  the order of the B-spline basis functions,
+                                #  in this case piece-wise quadratic
+nbasis = length(knots)+norder-2 #  the number of basis functions
+
+#  set up the basis object
+
+bbasis0 <- create.bspline.basis(range=rr, norder=norder, nbasis=nbasis,breaks=knots)
+times0  <- mTimes
+times.d  <- mTimes[mTimes >= 1]
+knots.d <-  seq(1,rr[2],2/52)
+nbasis.d = length(knots.d) + norder - 2
+bbasis.d <- create.bspline.basis(range=c(1,rr[2]), norder=norder, nbasis=nbasis.d, breaks=knots.d)
+
+## Generating Data
+mData <- matrix(NA, length(mI),2)
+mData[,2] <- mI
+colnames(mData) <- c("S" , "I")
+mData.d <- mData[mTimes >= 1,]
+
+# To get an initial estimate of the states we smooth the observed I component
+# and set the other coefficients to zero.
+
+# smooth the log I values
+fdnames=list(NULL,c('S', 'I'),NULL)
+DEfd0 <- smooth.basis(times0 ,(mData[,2]),fdPar(bbasis0,1,0.1))
+DEfd.d <- smooth.basis(times.d, (mData[,2])[times0 >= 1],fdPar(bbasis.d,1,0.1))
+coefs0 <- cbind(matrix(800000,bbasis0$nbasis,1), DEfd0$fd$coefs)
+coefs.d <- cbind(matrix(800000,bbasis.d$nbasis,1), DEfd.d$fd$coefs)
+colnames(coefs0) <- colnames(coefs.d) <- c("S", "I")
+# set up the functional data object for the three variables
+# plot the smooth plus data
+## plotfit.fd(mData[,2],times0,DEfd0$fd)
+
+DEfd0 <- fd(coefs0,bbasis0, fdnames)
+DEfd.d <- fd(coefs.d,bbasis.d, fdnames)
+mLambda <- c(1,1)
+
+#  list object betamore is now passed into LS.setup, too, in order to make
+#  it available as a functional parameter defined by its three coefficients
+#  run LS.setup
+mSIR.pars <- c(0.003, 0.2, 50, 0.025)
+names(mSIR.pars) <- c("beta", "sig","gamma", "alpha")
+mPars <- c(0.001, 40) #, 0.35)
+names(mPars) <- c("sig", "gamma") # , "alpha")
+initBeta <- rep(0, 8)
+initBeta[1:2] <- 0.00005
+
+rep(0, length(procTimes))
+for(i in 1:length(procTimes)){
+    month <- round((procTimes[i] - floor(procTimes[i])) * 12)
+    if(month == 0)
+        month <- 1
+    procB[i] <- bDf[which(bDf$year == (floor(procTimes[i])+1958) & bDf$month == month),3 ] * 4
+}
+
+save(mData, procB, mData.d, bbasis.d, bbasis0, coefs0,  file = "mReal.RData")
+
+## debugonce(Profile.LS.sparse)
+initBeta
+mPars
+dde.fit <- Profile.LS.sparse(mDSIRfn, mData.d, times.d, pars = mPars, beta = initBeta, coefs = dde.fit$res$coefs, basisvals = bbasis.d, lambda = c(10000000000,10000000000), more = list(b = procB),in.meth='nlminb', delay = delay, basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 2, tau = list(seq(0,7/52, 1/52)), control.out = list(method = "nnls", maxIter = 5, lambda.sparse = 0))
+
+DEfd.fit <- fd(dde.fit$res$coefs[,2, drop = FALSE],bbasis.d)
+plotfit.fd(mData.d[,2],times.d,DEfd.fit)
+DEfd.fit <- fd(dde.fit$res$coefs[,1, drop = FALSE] ,bbasis.d)
+plotfit.fd(y =mData.d[,2] , argvals = times.d, fdobj = DEfd.fit)
+
+DEfd.fit <- fd(dde.fit$res$coefs,bbasis.d)
+
+bbasis.s <-  create.bspline.basis(range=c(1+1958,rr[2]+1958), norder=norder, nbasis=nbasis.d, breaks=knots.d+ 1958)
+DEfd.s <-  smooth.basis(times.d + 1958, eval.fd(times.d, DEfd.fit), fdPar(bbasis.s,1,0.15))
+pdf("fittedS.pdf", width=7, height=4)
+plotfit.fd(y =mData.d[,2] , argvals = times.d + 1958, fdobj = DEfd.s$fd, ylab = "Weekly Reported Case")
+dev.off()
+save(initBeta, mPars, dde.fit, file = "ml10000.RData")
+
+mMb <- bDf[which(bDf$year >= 1955 & bDf$year < 1964),3 ]
+mMb <- c(mMb, mMb[108]) * 4
+fit.l1 <- dde.fit
+
+
+## Function to simulate  SIR model:
+mDSIR.gen <- function(t, y, parms){
+    if(t < 1.5 + 1/52){
+        lagI <- eval.fd(t - 1/52, DEfd.fit)[2]
+    }
+    else{
+        lagI <- lagvalue(t - parms["tau1"], 2)
+    }
+    yd <- parms["beta1"] *y[2] + parms["beta2"] * lagI
+    sint <- procB[which(procTimes - t == min(procTimes - t))]
+    dyS <-  -(parms["sig"] + transm(t)) * yd * y[1] +  sint
+    dyI <-  (parms["sig"] + transm(t)) * yd * y[1] - parms["gamma"] * y[2]
+    list(c(dyS, dyI))
+}
+
+sim.yinit <- eval.fd(1,DEfd.fit)
+sim.times <- seq(1.5, 5, by = 1/52)
+## Simulation for SIR
+mDSIR.pars <- c(0.15, dde.fit$res$pars["gamma"],dde.fit$res$beta[1:2], 1/52)
+names(mDSIR.pars) <- c("sig","gamma", "beta1", "beta2", "tau1")
+## debugonce(mDSIR.gen)
+yout <- dede(y = sim.yinit, times = sim.times, func = mDSIR.gen, parms = mDSIR.pars, atol = 1e-6)
+matplot(yout[,1], yout[,3], type = "l", lwd = 2, main = "SIR Model")
+
