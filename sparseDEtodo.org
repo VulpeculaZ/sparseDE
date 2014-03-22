@@ -1,0 +1,7 @@
+* lasso on grid simulations:
+** TODO lasso on grid for delays
+** TODO lasso on grid for tv
+
+* TODO lasso tv for measles data
+
+* TODO spline delays

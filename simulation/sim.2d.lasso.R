@@ -53,7 +53,7 @@ fdnames=list(NULL,c('S', 'I'),NULL)
 bfdPar0 = fdPar(basis0,lambda=1,int2Lfd(1))
 bfdPar.d <- fdPar(basis.d,lambda=1,int2Lfd(1))
 args <- commandArgs(TRUE)
-lambda.id <- args[1]
+lambda.id <- as.numeric(args[1])
 lambda0 <- 1
 lambda.sparse <- exp(seq(log(lambda0), log(lambda0 * 0.0005), len = 50))[lambda.id]
 filename <- paste("lasso2d", lambda.id, args[2],".RData",  sep = "")
@@ -61,8 +61,8 @@ filename <- paste("lasso2d", lambda.id, args[2],".RData",  sep = "")
 begTime <- Sys.time()
 set.seed(42)
 sim.res <- list()
-for(i in 1:3){
 
+for(i in 1:3){
     xout <- c()
     xout <- cbind(xout, yout[,2] + rnorm(length(yout[,2]), sd = 0.01))
     xout <- cbind(xout, yout[,3] + rnorm(length(yout[,2]), sd = 0.01))
@@ -92,7 +92,6 @@ for(i in 1:3){
     dde.fit <- Profile.LS.sparse(DSIRfn.sparse, dsirData, times.d, pars = initPars, beta = initBeta, coefs = coefs.d, basisvals = basis.d, lambda = 100, in.meth='nlminb', delay = delay, basisvals0 = basis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 2, tau = list(seq(0,5, length.out = 16)), control.out = list(method = "penalized", maxIter = 10, lambda.sparse = lambda.sparse))
     sim.res[[i]] <- dde.fit
     save(sim.res, DSIR.pars, file =filename)
-
 }
 
 runTime <- Sys.time() - begTime
