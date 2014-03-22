@@ -4,11 +4,9 @@ nls.sparse <- function(pars, beta, active, basisvals, fdobj0, times, data, coefs
     }
     pars.names <- names(pars)
     f.conv <- pars.beta <- c()
-    maxStep <- 6
+    maxStep <- 8
     lambda.sparse <- control.out$lambda.sparse
     for(i in 1:control.out$maxIter){
-        pars.old <- pars
-        beta.old <- beta
         for(j in 1:maxStep){
             linObj <- ProfileSSE.AllPar.sparse(pars = pars, beta = beta, times = times, data = data, coefs = coefs, lik = lik, proc = proc, in.meth = in.meth,control.in = control.in, basisvals = basisvals, fdobj0 = fdobj0)
             f.new <- linObj$f
@@ -19,13 +17,15 @@ nls.sparse <- function(pars, beta, active, basisvals, fdobj0, times, data, coefs
             if(control.out$method == "enet"){
                 f.new <- f.new + lambda.sparse * sum(abs(beta)) + 0.0005* sum(beta^2)
             }
-            print(x = c(paste("Iter:", i, f.new)))
-            cat(pars, beta, "\n")
+            ## if(control.out$echo == TRUE){
+            ## print(x = c(paste("Iter:", i, f.new)))
+            ##    cat(pars, beta, "\n")
+            ## }
             if(i == 1){
                 break
             }else{
                 if(f.conv[i - 1] - f.new > 0 & f.conv[i - 1] - f.new < control.out$tol){
-                    return(list(pars=pars.old, beta = beta.old, coefs = coefs, f = f.new, y = y, Xdf = Xdf, Zdf = Zdf, conv = list(f = f.conv, pars.beta=pars.beta, conv.message = "Converged.")))
+                    return(list(pars=pars, beta = beta, coefs = coefs, f = f.new, y = y, Xdf = Xdf, Zdf = Zdf, conv = list(f = f.conv, pars.beta=pars.beta, conv.message = "Converged.")))
                 }
                 if(f.conv[i - 1] - f.new > 0){
                     break
@@ -37,6 +37,8 @@ nls.sparse <- function(pars, beta, active, basisvals, fdobj0, times, data, coefs
                 beta <- 0.5*(beta - beta.old) + beta.old
             }
         }
+        pars.old <- pars
+        beta.old <- beta
         f.conv <- c(f.conv, f.new)
         pars.beta <- rbind(pars.beta, c(pars, beta))
         Xdf <- - linObj$df[, 1:length(pars), drop = FALSE]
@@ -49,7 +51,7 @@ nls.sparse <- function(pars, beta, active, basisvals, fdobj0, times, data, coefs
             beta <- res$thetamcp
         }
         if(control.out$method == "penalized"){
-            res <- penalized(response = y, penalized = Zdf, unpenalized = Xdf, lambda1 = lambda.sparse, positive = TRUE)
+            res <- penalized(response = y, penalized = Zdf, unpenalized = Xdf, lambda1 = lambda.sparse, positive = TRUE, trace = FALSE)
             pars <- res@unpenalized
             beta <- res@penalized
         }
@@ -299,139 +301,7 @@ Profile.LS.sparse <- function(fn, data, times, pars, beta, coefs = NULL, basisva
     }
     res <- nls.sparse(pars = pars, beta = beta, active = active, basisvals = basisvals, fdobj0 = fdobj0, times = times, data = data, coefs = ncoefs, lik = lik, proc = proc, control.out = control.out, control.in = control.in, in.meth = in.meth)
     ncoefs <- res$coefs
-    if(is.null(control.out$pars.c))
-        control.out$pars.c <- 100
-    if(control.out$lambda.sparse == -1){
-        Zdf <- res$Zdf
-        Xdf <- res$Xdf
-        y <- res$y
-        lambda0 = max(abs(as.vector(t(y) %*% Zdf)))
-        lambda = exp(seq(log(lambda0), log(lambda0 * 0.001), len = 20))
-        pars.pen <- beta.pen <- coefs.pen <- list()
-        bic <- f <- rep(NA, length(lambda))
-        for(i in 1:length(lambda)){
-            lambda.sparse <- lambda[i]
-            res.sparse <- penalized(response = y, penalized = Zdf, unpenalized = Xdf, lambda1 = lambda[i])
-            pars.pen[[i]] <- res.sparse@unpenalized
-            beta.pen[[i]] <- res.sparse@penalized
-            Ires <- inneropt.DDE(data, times, par = pars.pen[[i]], beta = beta.pen[[i]],  ncoefs, lik, proc, in.meth, control.in, basisvals = basisvals, fdobj0 = fdobj0)
-            devals <- as.matrix(lik$bvals%*%Ires$coefs)
-            f <- as.vector(as.matrix(data - lik$more$fn(times, devals, pars, lik$more$more)))
-            coefs.pen[[i]] <- Ires$coefs
-            sd.pen <- sd(f)
-            ll.pen <- - sum(f^2) / (sd.pen^2) / 2 - length(f) * log(sd.pen)
-            bic[i] <- -2 * ll.pen + (sum(beta.pen[[i]] > .Machine$double.eps) + length(pars.pen[[i]])) * log(length(data))
-        }
-        i.select <- which(bic == min(bic))
-        sel.res <- list(pars.pen = pars.pen[[i.select]], beta.pen = beta.pen[[i.select]], bic = bic[i.select], coefs.pen = coefs.pen[[i.select]], lambda = lambda[i.select])
-    }
-
-    if(control.out$lambda.sparse == -2){
-        ## Positive addaptive lasso using lars: Total eliminatioin
-        ## NO WORKING!!
-        w.pars <- abs(res$pars) * control.out$pars.c
-        w.beta <- abs(res$beta)                      # weights for adaptive lasso
-        beta.ind <- which(w.beta > 0)
-        w.beta <- w.beta[beta.ind]
-        w <- c(w.pars, w.beta)
-        x <- cbind(res$Xdf, res$Zdf[, beta.ind])
-        n <- nrow(x)
-        one <- rep(1, n)
-        meanx <- drop(one %*% x)/n
-        xc <- scale(x, meanx, FALSE)         # first subtracts mean
-        normx <- sqrt(drop(one %*% (xc^2)))
-        names(normx) <- NULL
-        xs <- scale(xc, FALSE, normx)        # now rescales with norm (not sd)
-        xs <- scale(xs, center=FALSE,scale=1/w)  # xs times the weights
-        object <- lars.pos(x = xs, y = res$y, positive = TRUE, normalize = FALSE)
-        object$beta <- object$beta[which(rowSums(object$beta[,1:length(res$pars), drop=FALSE] > 0) > 0 ),, drop = FALSE]
-        object$beta <- sweep(object$beta, 1, w, "*")
-        bic <- rep(0, dim(object$beta)[2])
-        coefs.pen <- list()
-        for(i in 1:dim(object$beta)[1]){
-            pars.al1 <- object$beta[1:length(pars),i]
-            names(pars.al1) <- names(pars)
-            beta.al1 <- rep(0, length(beta))
-            beta.al1[beta.ind] <- object$beta[(1+length(pars)) : dim(object$beta)[1],i]
-            Ires <- inneropt.DDE(data, times, par = pars.al1, beta = beta.al1,  ncoefs, lik, proc, in.meth, control.in, basisvals = basisvals, fdobj0 = fdobj0)
-            devals <- as.matrix(lik$bvals%*%Ires$coefs)
-            f <- as.vector(as.matrix(data - lik$more$fn(times, devals, pars, lik$more$more)))
-            coefs.pen[[i]] <- Ires$coefs
-            sd.pen <- sd(f)
-            ll.pen <- - sum(f^2) / (sd.pen^2) / 2 - length(f) * log(sd.pen)
-            bic[i] <- -2 * ll.pen + (sum(beta.al1 > .Machine$double.eps) + length(pars.al1)) * log(length(data))
-        }
-        i.select <- which(bic == min(bic))
-        pars.al1 <- object$beta[1:length(pars),i.select]
-        names(pars.al1) <- names(pars)
-        beta.al1 <- rep(0, length(beta))
-        beta.al1[beta.ind] <- object$beta[(1+length(pars)) : dim(object$beta)[1],i.select]
-        sel.res <- list(pars = pars.al1, beta = beta.al1, bic = bic[i.select], coefs = coefs.pen[[i.select]], lambda = lambda[i.select])
-    }
-    ## Positive addaptive lasso using lars: Partial eliminatioin:
-    if(control.out$lambda.sparse == -3){
-        w.pars <- abs(res$pars) * control.out$pars.c
-        w.beta <- abs(res$beta)                      # weights for adaptive lasso
-        w.beta[w.beta == 0] <- min(w.beta[w.beta > 0]) / 2
-        w <- c(w.pars, w.beta)
-        x <- cbind(res$Xdf, res$Zdf)
-        n<-nrow(x)
-        one <- rep(1, n)
-        meanx <- drop(one %*% x)/n
-        xc <- scale(x, meanx, FALSE)         # first subtracts mean
-        normx <- sqrt(drop(one %*% (xc^2)))
-        names(normx) <- NULL
-        xs <- scale(xc, FALSE, normx)        # now rescales with norm (not sd)
-        xs <- scale(xs, center=FALSE,scale=1/w)  # xs times the weights
-        object <- lars.pos(xs,res$y,type="lasso",normalize=FALSE, positive = TRUE)
-        object$beta <- object$beta[which(rowSums(object$beta[,1:length(res$pars), drop=FALSE] > 0) > 0 ),, drop = FALSE]
-        object$beta <- sweep(object$beta, 2, w, "*")
-        bic <- rep(0, dim(object$beta)[1])
-        coefs.pen <- list()
-        for(i in 1:dim(object$beta)[1]){
-            pars.al <- object$beta[i, 1:length(pars)]
-            names(pars.al) <- names(pars)
-            beta.al <- object$beta[i, (1+length(pars)) : dim(object$beta)[2]]
-            Ires <- inneropt.DDE(data, times, par = pars.al, beta = beta.al,  ncoefs, lik, proc, in.meth, control.in, basisvals = basisvals, fdobj0 = fdobj0)
-            devals <- as.matrix(lik$bvals%*%Ires$coefs)
-            f <- as.vector(as.matrix(data - lik$more$fn(times, devals, pars, lik$more$more)))
-            coefs.pen[[i]] <- Ires$coefs
-            sd.pen <- sd(f)
-            ll.pen <- - sum(f^2) / (sd.pen^2) / 2 - length(f) * log(sd.pen)
-            bic[i] <- -2 * ll.pen + (sum(beta.al > .Machine$double.eps) + length(pars.al)) * log(length(data))
-        }
-        i.select <- which(bic == min(bic))
-        pars.al <- object$beta[i.select, 1:length(pars)]
-        names(pars.al) <- names(pars)
-        beta.al <- object$beta[i.select, (1+length(pars)) : dim(object$beta)[2]]
-        sel.res <- list(pars = pars.al, beta = beta.al, bic = bic[i.select], coefs = coefs.pen[[i.select]])
-    }
-    ## Positive Lars:
-    if(control.out$lambda.sparse == -4){
-        Zdf <- res$Zdf
-        y <- res$y - res$Xdf %*% res$pars
-        object <- lars.pos(Zdf,y, positive = TRUE)
-        bic <- rep(0, dim(object$beta)[1])
-        coefs.pen <- list()
-        for(i in 1:dim(object$beta)[1]){
-            beta.pl <- object$beta[i,]
-            Ires <- inneropt.DDE(data, times, par = res$pars, beta = beta.pl,  ncoefs, lik, proc, in.meth, control.in, basisvals = basisvals, fdobj0 = fdobj0)
-            devals <- as.matrix(lik$bvals%*%Ires$coefs)
-            f <- as.vector(as.matrix(data - lik$more$fn(times, devals, pars, lik$more$more)))
-            coefs.pen[[i]] <- Ires$coefs
-            sd.pen <- sd(f)
-            ll.pen <- - sum(f^2) / (sd.pen^2) / 2 - length(f) * log(sd.pen)
-            bic[i] <- -2 * ll.pen + (sum(beta.pl > .Machine$double.eps) +length(res$pars)) * log(length(data))
-        }
-        i.select <- which(bic == min(bic))
-        beta.al <- object$beta[i.select ,]
-        sel.res <- list(pars = res$pars, beta = beta.al, bic = bic[i.select], coefs = coefs.pen[[i.select]])
-    }
-    if(control.out$lambda.sparse < 0){
-        return(list( data = data,res = res, select = sel.res))
-    }else{
-        return(list( data = data,res = res, ncoefs = ncoefs))
-    }
+    return(list( data = data,res = res, ncoefs = ncoefs))
 }
 
 
