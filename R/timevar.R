@@ -14,8 +14,8 @@ nls.tv <- function(pars, kappa, active, basisvals, times, data, coefs, lik, proc
             if(control.out$method == "penalized"){
                 f.new <- f.new + lambda.sparse * sum(abs(kappa[-1] - kappa[-length(kappa)]))
             }
-            print(x = c(paste("Iter:", i, f.new)))
-            cat(pars, kappa, "\n")
+            ## print(x = c(paste("Iter:", i, f.new)))
+            ## cat(pars, kappa, "\n")
             if(i == 1){
                 break
             }else{

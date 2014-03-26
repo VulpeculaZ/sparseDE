@@ -41,8 +41,8 @@ initUnifKappa <- runif(100, -0.001,0.001)
 
 args <- commandArgs(TRUE)
 lambda.id <- as.numeric(args[1])
-lambda0 <- 1e10
-lambda.sparse <- exp(seq(log(lambda0), log(lambda0 * 0.005), len = 50))[lambda.id]
+lambda0 <- 2e10
+lambda.sparse <- exp(seq(log(lambda0), log(lambda0 * 0.01), len = 50))[lambda.id]
 filename <- paste("lassotv", lambda.id,".RData", sep = "")
 
 begTime <- Sys.time()
