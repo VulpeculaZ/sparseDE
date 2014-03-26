@@ -1,7 +1,18 @@
-* lasso on grid simulations:
-** TODO lasso on grid for delays
-** TODO lasso on grid for tv
+* Applications
+** lasso on grid simulations:
+*** TODO lasso on grid for delays
+*** TODO lasso on grid for tv
 
-* TODO lasso tv for measles data
+** TODO lasso tv for measles data
 
-* TODO spline delays
+** TODO spline delays
+
+** Longtime:
+*** TODO HIV infection data
+*** TODO High-dimensional genomic data
+*** TODO High-dimensional google trend data.
+
+
+* Theory:
+** TODO Find paper about nls lasso
+** TODO Profile the entire non-convex likelihood or posterior distribution.

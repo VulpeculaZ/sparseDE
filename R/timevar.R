@@ -4,11 +4,9 @@ nls.tv <- function(pars, kappa, active, basisvals, times, data, coefs, lik, proc
     }
     pars.names <- names(pars)
     f.conv <- pars.kappa <- c()
-    maxStep <- 6
+    maxStep <- 10
     lambda.sparse <- control.out$lambda.sparse
     for(i in 1:control.out$maxIter){
-        pars.old <- pars
-        kappa.old <- kappa
         for(j in 1:maxStep){
             linObj <- ProfileSSE.AllPar.tv(pars = c(pars,kappa), times = times, data = data, coefs = coefs, lik = lik, proc = proc, in.meth = in.meth,control.in = control.in)
             f.new <- linObj$f
@@ -34,6 +32,8 @@ nls.tv <- function(pars, kappa, active, basisvals, times, data, coefs, lik, proc
                 kappa <- 0.5*(kappa - kappa.old) + kappa.old
             }
         }
+        pars.old <- pars
+        kappa.old <- kappa
         f.conv <- c(f.conv, f.new)
         pars.kappa <- rbind(pars.kappa, c(pars, kappa))
         Xdf <- - linObj$df[, 1:length(pars), drop = FALSE]
@@ -41,7 +41,7 @@ nls.tv <- function(pars, kappa, active, basisvals, times, data, coefs, lik, proc
         y <- - linObj$df %*% c(pars, kappa) + linObj$f
         coefs <- linObj$coefs
         if(control.out$method == "penalized"){
-            res <- penalized(response = y, penalized = Zdf, unpenalized = Xdf, lambda1 = lambda.sparse, positive = TRUE, fusedl = TRUE)
+            res <- penalized(response = y, penalized = Zdf, unpenalized = Xdf, lambda2 = lambda.sparse, positive = TRUE, fusedl = TRUE, trace = FALSE)
             pars <- res@unpenalized
             kappa <- res@penalized
         }
@@ -88,37 +88,7 @@ Profile.LS.tv <- function(fn, data, times, pars, kappa, coefs = NULL, basisvals 
     }
     res <- nls.tv(pars = pars, kappa = kappa, active = active, basisvals = basisvals, times = times, data = data, coefs = ncoefs, lik = lik, proc = proc, control.out = control.out, control.in = control.in, in.meth = in.meth)
     ncoefs <- res$coefs
-    if(is.null(control.out$pars.c))
-        control.out$pars.c <- 100
-    if(control.out$lambda.sparse == -1){
-        Zdf <- res$Zdf
-        Xdf <- res$Xdf
-        y <- res$y
-        lambda0 = max(abs(as.vector(t(y) %*% Zdf)))
-        lambda = exp(seq(log(lambda0), log(lambda0 * 0.001), len = 20))
-        pars.pen <- kappa.pen <- coefs.pen <- list()
-        bic <- f <- rep(NA, length(lambda))
-        for(i in 1:length(lambda)){
-            lambda.sparse <- lambda[i]
-            res.sparse <- penalized(response = y, penalized = Zdf, unpenalized = Xdf, lambda1 = lambda[i], fusedl = TRUE, positive = TRUE)
-            pars.pen[[i]] <- res.sparse@unpenalized
-            kappa.pen[[i]] <- res.sparse@penalized
-            Ires <- inneropt(data, times, par = c(pars.pen[[i]],kappa.pen[[i]]),  ncoefs, lik, proc, in.meth, control.in)
-            devals <- as.matrix(lik$bvals%*%Ires$coefs)
-            f <- as.vector(as.matrix(data - lik$more$fn(times, devals, pars, lik$more$more)))
-            coefs.pen[[i]] <- Ires$coefs
-            sd.pen <- sd(f)
-            ll.pen <- - sum(f^2) / (sd.pen^2) / 2 - length(f) * log(sd.pen)
-            bic[i] <- -2 * ll.pen + (sum(kappa.pen[[i]] > .Machine$double.eps) + length(pars.pen[[i]])) * log(length(data))
-        }
-        i.select <- which(bic == min(bic))
-        sel.res <- list(pars.pen = pars.pen[[i.select]], kappa.pen = kappa.pen[[i.select]], bic = bic[i.select], coefs.pen = coefs.pen[[i.select]], lambda = lambda[i.select])
-    }
-    if(control.out$lambda.sparse < 0){
-        return(list( data = data,res = res, select = sel.res))
-    }else{
-        return(list( data = data,res = res, ncoefs = ncoefs))
-    }
+    return(list( data = data,res = res, ncoefs = ncoefs))
 }
 
 LS.tv <- function(fn, data, times, pars, kappa, coefs = NULL, basisvals = NULL,
@@ -159,13 +129,15 @@ LS.tv <- function(fn, data, times, pars, kappa, coefs = NULL, basisvals = NULL,
         Xdf <- res$Xdf
         y <- res$y
         pars <- res$pars
-        lambda0 <- max(abs(as.vector(t(y -Xdf * pars ) %*% sweep(Zdf, 1, mean(Zdf)))))
-        lambda = exp(seq(log(lambda0), log(lambda0 * 0.001), len = 5))
+        Z0 <- rowSums(Zdf)
+        beta0 <- sum((y - Xdf %*% pars ) * Z0) / sum(Z0^2)
+        lambda0 <- max(abs(as.vector(t(y -Xdf %*% pars - Z0 * beta0) %*% sweep(Zdf, 1, mean(Zdf)))))
+        lambda = exp(seq(log(lambda0), log(lambda0 * 0.001), len = 50))
         pars.pen <- kappa.pen <- coefs.pen <- list()
         bic <- f <- rep(NA, length(lambda))
         for(i in 1:length(lambda)){
             lambda.sparse <- lambda[i]
-            res.sparse <- penalized(response = y, penalized = Zdf, unpenalized = Xdf, lambda2 = lambda[i], fusedl = TRUE, positive = TRUE)
+            res.sparse <- penalized(response = y, penalized = Zdf, unpenalized = Xdf, lambda2 = lambda0, fusedl = TRUE, positive = TRUE)
             pars.pen[[i]] <- res.sparse@unpenalized
             kappa.pen[[i]] <- res.sparse@penalized
             Ires <- inneropt(data, times, par = c(pars.pen[[i]],kappa.pen[[i]]),  ncoefs, lik, proc, in.meth, control.in)
@@ -275,7 +247,7 @@ tvDSIRfn$fn <- function (t, y, p, more)
 {
     r = y
     pk <- p[(length(p) - 11):length(p)]
-    r[, "S"] =  - tvtrans(t, pk) * y[,"I"] * y[, "S"] + 2000 * (sin(t) / 2 + 2)
+    r[, "S"] =  - tvtrans(t, pk) * y[,"I"] * y[, "S"] + 8000 * (sin(t / pi) / 2 + 2)
     r[, "I"] =  tvtrans(t, pk) * y[,"I"] * y[, "S"] - p["gamma"] * y[, "I"]
     return(r)
 }
@@ -298,8 +270,8 @@ tvDSIRfn$dfdp <- function (t, y, p, more)
     r[, "I", "gamma"] = - y[, "I"]
     month <- t %% 1
     for(i in 1:12){
-        r[ , "S", paste("k", i, sep ="")][month  >= (i-1)/12 & month < i /12] = - y[,"I"] * y[, "S"][month  >= (i-1)/12 & month < i /12]
-        r[ , "I", paste("k", i, sep ="")][month  >= (i-1)/12 & month < i /12] = y[,"I"] * y[, "S"][month  >= (i-1)/12 & month < i /12]
+        r[ , "S", paste("k", i, sep ="")][month  >= (i-1)/12 & month < i /12] = - (y[,"I"] * y[, "S"])[month  >= (i-1)/12 & month < i /12]
+        r[ , "I", paste("k", i, sep ="")][month  >= (i-1)/12 & month < i /12] = (y[,"I"] * y[, "S"])[month  >= (i-1)/12 & month < i /12]
     }
     return(r)
 }

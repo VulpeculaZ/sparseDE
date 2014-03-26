@@ -8,32 +8,25 @@ library(CollocInfer)
 library(deSolve)
 library(nnls)
 
-load("sim.tv01.RData")
-nnlist <- sim.res
 ## Function to simulate DSIR
 ## Function to simulate  SIR model:
 
 tvSIR.gen <- function(t, y, parms){
-    sint <- 2000 * (sin(t / parms["f"]) / 2 + 2)
+    sint <- 8000 * (sin(t / parms["f"] / pi) / 2 + 2)
     dyS <- - (tvtrans(t, kappa)) * y[2] * y[1] +  sint
     dyI <- (tvtrans(t, kappa)) * y[2] * y[1] - parms["gamma"] * y[2]
     list(c(dyS, dyI))
 }
 
 
-yinit <- c(3000, 400)
+yinit <- c(5000, 800)
 times <- seq(0, 5, by = 1/52)
-tvSIR.pars <- c(20, 1)
-kappa <- rep(0.01, 12)
-kappa[10:12] <- 0.006
+tvSIR.pars <- c(10, 1)
+kappa <- rep(0.005, 12)
+kappa[10:12] <- 0.002
 names(tvSIR.pars) <- c("gamma", "f")
 yout <- dede(y = yinit, times = times, func = tvSIR.gen, parms = tvSIR.pars, atol = 1e-10)
-pdf("tvsim.pdf", 7, 5)
-matplot(yout[,1], yout[,-1], type = "l", lwd = 2, main = "Delayed SIR Model", xlab="time", ylab="Numbers of individuals")
-points(times, xout[,1])
-points(times, xout[,2])
-legend("topright", legend = c("S","I"), col=c(1,2), lty = c(1,2), lwd = c(2,2))
-dev.off()
+matplot(yout[,1], yout[,-1], type = "l", lwd = 2, main = "Time Varying SIR Model")
 
 
 knots <- times
@@ -42,35 +35,52 @@ nbasis = length(knots) + norder - 2
 range  = range(knots)
 basis <- create.bspline.basis(range=range(knots), nbasis=nbasis, norder=norder, breaks=knots)
 fdnames=list(NULL,c('S', 'I'),NULL)
-bfdPar <- fdPar(basis,lambda=1,int2Lfd(1))
-set.seed(42)
+bfdPar <- fdPar(basis,lambda=0.2,int2Lfd(1))
 initUnif <- runif(100, -1,1)
 
+args <- commandArgs(TRUE)
+lambda.id <- as.numeric(args[1])
+lambda0 <- 1e10
+lambda.sparse <- exp(seq(log(lambda0), log(lambda0 * 0.005), len = 50))[lambda.id]
+filename <- paste("lassotv", lambda.id,".RData", sep = "")
+
+begTime <- Sys.time()
 set.seed(42)
 sim.res <- list()
 for(i in 1:100){
+    print(i)
     xout <- c()
-    xout <- cbind(xout, yout[,2] + rnorm(length(yout[,2]), sd = 0.02))
-    xout <- cbind(xout, yout[,3] + rnorm(length(yout[,2]), sd = 0.02))
+    xout <- cbind(xout, yout[,2] + rnorm(length(yout[,2]), sd = 50))
+    xout <- cbind(xout, yout[,3] + rnorm(length(yout[,2]), sd = 50))
     ## points(times, xout)
     DEfd <- smooth.basis(knots, xout, bfdPar,fdnames=fdnames)$fd
     ## temp.fit <- eval.fd(times.d, DEfd.d)
     ## par(ask=FALSE)
-    ## plotfit.fd(xout[times >=0,], times0, DEfd0)
+    plotfit.fd(xout, times, DEfd)
     ## plotfit.fd(xout[times >=5,], times.d, DEfd.d)
     ## extract the coefficients and assign variable names
     coefs <- DEfd$coefs
     colnames(coefs) = c("S","I")
     ##  Set a value for lambda
-    lambda = 1
+    ## lambda = 1000
     ## Data
     tvData <- matrix(xout, ncol =2, dimnames = list(NULL,c("S", "I")))
     ## Setting initial values
-    initPars <- 20 + initUnif[i]
+    initPars <- 10 + initUnif[i]
     names(initPars) <- c("gamma")
-    initKappa <- rep(0.01, 12)
+    initKappa <- rep(0.004, 12)
     names(initKappa) <- c("k1", "k2", "k3","k4","k5","k6","k7","k8","k9","k10","k11", "k12")
-    tv.fused <- LS.tv(tvDSIRfn, nnlist[[i]]$data, times, pars = initPars, kappa = initKappa, coefs = coefs, basisvals = basis, lambda = 1, in.meth='nlminb', control.out = list(method = "nnls", maxIter = 10, lambda.sparse = -1), nnls.res = nnlist[[i]]$res)
-    sim.res[[i]] <- tv.fused$select
-    save(sim.res, file ="sim.tvfused.RData")
+    tv.fit <- Profile.LS.tv(tvDSIRfn, tvData, times=times, pars = initPars, kappa = initKappa, coefs = coefs, basisvals = basis, lambda = 1000, in.meth='nlminb', control.out = list(method = "nnls", maxIter = 20, lambda.sparse = 0))
+    sim.res[[i]] <- tv.fit
+    save(sim.res, initPars, initKappa,  file =filename)
+    DEfd.fit <- DEfd
+    DEfd.fit$coefs <- tv.fit$ncoefs
+    plotfit.fd(xout, times, DEfd.fit)
+
 }
+
+
+
+runTime <- Sys.time() - begTime
+print(runTime)
+save(sim.res, initPars, initKappa, runTime, file = filename)
