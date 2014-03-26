@@ -51,7 +51,7 @@ for(i in 1:100){
     DEfd <- smooth.basis(knots, xout, bfdPar,fdnames=fdnames)$fd
     ## temp.fit <- eval.fd(times.d, DEfd.d)
     ## par(ask=FALSE)
-    plotfit.fd(xout, times, DEfd)
+    ## plotfit.fd(xout, times, DEfd)
     ## plotfit.fd(xout[times >=5,], times.d, DEfd.d)
     ## extract the coefficients and assign variable names
     coefs <- DEfd$coefs
@@ -64,7 +64,6 @@ for(i in 1:100){
     initPars <- 10 + initUnif[i]
     names(initPars) <- c("gamma")
     initKappa <- rep(0.005, 12)
-    initKappa[10:12] <- 0.002
     initKappa <- initKappa + initUnifKappa[i]
     names(initKappa) <- c("k1", "k2", "k3","k4","k5","k6","k7","k8","k9","k10","k11", "k12")
     tv.fit <- Profile.LS.tv(tvDSIRfn, tvData, times=times, pars = initPars, kappa = initKappa, coefs = coefs, basisvals = basis, lambda = 1000, in.meth='nlminb', control.out = list(method = "nnls", maxIter = 20, lambda.sparse = 0))

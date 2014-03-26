@@ -26,7 +26,7 @@ kappa <- rep(0.005, 12)
 kappa[10:12] <- 0.002
 names(tvSIR.pars) <- c("gamma", "f")
 yout <- dede(y = yinit, times = times, func = tvSIR.gen, parms = tvSIR.pars, atol = 1e-10)
-matplot(yout[,1], yout[,-1], type = "l", lwd = 2, main = "Time Varying SIR Model")
+## matplot(yout[,1], yout[,-1], type = "l", lwd = 2, main = "Time Varying SIR Model")
 
 
 knots <- times
@@ -37,6 +37,7 @@ basis <- create.bspline.basis(range=range(knots), nbasis=nbasis, norder=norder, 
 fdnames=list(NULL,c('S', 'I'),NULL)
 bfdPar <- fdPar(basis,lambda=0.2,int2Lfd(1))
 initUnif <- runif(100, -1,1)
+initUnifKappa <- runif(100, -0.001,0.001)
 
 args <- commandArgs(TRUE)
 lambda.id <- as.numeric(args[1])
@@ -56,7 +57,7 @@ for(i in 1:100){
     DEfd <- smooth.basis(knots, xout, bfdPar,fdnames=fdnames)$fd
     ## temp.fit <- eval.fd(times.d, DEfd.d)
     ## par(ask=FALSE)
-    plotfit.fd(xout, times, DEfd)
+    ## plotfit.fd(xout, times, DEfd)
     ## plotfit.fd(xout[times >=5,], times.d, DEfd.d)
     ## extract the coefficients and assign variable names
     coefs <- DEfd$coefs
@@ -68,18 +69,13 @@ for(i in 1:100){
     ## Setting initial values
     initPars <- 10 + initUnif[i]
     names(initPars) <- c("gamma")
-    initKappa <- rep(0.004, 12)
+    initKappa <- rep(0.005, 12)
+    initKappa <- initKappa + initUnifKappa[i]
     names(initKappa) <- c("k1", "k2", "k3","k4","k5","k6","k7","k8","k9","k10","k11", "k12")
-    tv.fit <- Profile.LS.tv(tvDSIRfn, tvData, times=times, pars = initPars, kappa = initKappa, coefs = coefs, basisvals = basis, lambda = 1000, in.meth='nlminb', control.out = list(method = "nnls", maxIter = 20, lambda.sparse = 0))
+    tv.fit <- Profile.LS.tv(tvDSIRfn, tvData, times=times, pars = initPars, kappa = initKappa, coefs = coefs, basisvals = basis, lambda = 1000, in.meth='nlminb', control.out = list(method = "penalized", maxIter = 20, lambda.sparse = lambda.sparse))
     sim.res[[i]] <- tv.fit
     save(sim.res, initPars, initKappa,  file =filename)
-    DEfd.fit <- DEfd
-    DEfd.fit$coefs <- tv.fit$ncoefs
-    plotfit.fd(xout, times, DEfd.fit)
-
 }
-
-
 
 runTime <- Sys.time() - begTime
 print(runTime)
