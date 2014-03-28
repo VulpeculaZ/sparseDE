@@ -46,3 +46,6 @@ fdp.beta / 100
 ## 0.1857143
 fnp.beta / 100
 ## 0.635
+
+sum(colMeans(betaMat))
+mean(pars)

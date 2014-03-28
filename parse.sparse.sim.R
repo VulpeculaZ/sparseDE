@@ -1,3 +1,5 @@
+## This script summarizes the results of estimating delays with nnls and various penalized methods applied after nnls fitting.
+
 load("pen2d01.RData")
 res.pen <- sim.res
 rm(list = c("sim.res"))

@@ -14,8 +14,10 @@ nls.tv <- function(pars, kappa, active, basisvals, times, data, coefs, lik, proc
             if(control.out$method == "penalized"){
                 f.new <- f.new + lambda.sparse * sum(abs(kappa[-1] - kappa[-length(kappa)]))
             }
-            ## print(x = c(paste("Iter:", i, f.new)))
-            ## cat(pars, kappa, "\n")
+            if(control.out$echo){
+                print(x = c(paste("Iter:", i, f.new)))
+                cat(pars, kappa, "\n")
+            }
             if(i == 1){
                 break
             }else{
@@ -72,6 +74,7 @@ Profile.LS.tv <- function(fn, data, times, pars, kappa, coefs = NULL, basisvals 
     dims = dim(data)
     lik = profile.obj$lik
     proc = profile.obj$proc
+    proc$more$more$nKappa <- length(kappa)
     coefs = profile.obj$coefs
     data = profile.obj$data
     times = profile.obj$times
@@ -246,7 +249,7 @@ tvDSIRfn <- list()
 tvDSIRfn$fn <- function (t, y, p, more)
 {
     r = y
-    pk <- p[(length(p) - 11):length(p)]
+    pk <- p[(length(p) - (nKappa - 1)):length(p)]
     r[, "S"] =  - tvtrans(t, pk) * y[,"I"] * y[, "S"] + 8000 * (sin(t / pi) / 2 + 2)
     r[, "I"] =  tvtrans(t, pk) * y[,"I"] * y[, "S"] - p["gamma"] * y[, "I"]
     return(r)
@@ -256,7 +259,7 @@ tvDSIRfn$dfdx <- function (t, y, p, more)
 {
     r = array(0, c(length(t), ncol(y), ncol(y)))
     dimnames(r) = list(NULL, colnames(y), colnames(y))
-    pk <- p[(length(p) - 11):length(p)]
+    pk <- p[(length(p) - (nKappa - 1)):length(p)]
     r[, "S", "S"] = - tvtrans(t, pk) * y[,"I"]
     r[, "I", "S"] =  tvtrans(t, pk) * y[,"I"]
     r[, "I", "I"] = -p["gamma"]
@@ -265,13 +268,14 @@ tvDSIRfn$dfdx <- function (t, y, p, more)
 
 tvDSIRfn$dfdp <- function (t, y, p, more)
 {
+    nKappa <- more$nKappa
     r = array(0, c(length(t), ncol(y), length(p)))
     dimnames(r) = list(NULL, colnames(y), names(p))
     r[, "I", "gamma"] = - y[, "I"]
     month <- t %% 1
-    for(i in 1:12){
-        r[ , "S", paste("k", i, sep ="")][month  >= (i-1)/12 & month < i /12] = - (y[,"I"] * y[, "S"])[month  >= (i-1)/12 & month < i /12]
-        r[ , "I", paste("k", i, sep ="")][month  >= (i-1)/12 & month < i /12] = (y[,"I"] * y[, "S"])[month  >= (i-1)/12 & month < i /12]
+    for(i in 1:nKappa){
+        r[ , "S", paste("k", i, sep ="")][month  >= (i-1)/nKappa & month < i /nKappa] = - (y[,"I"] * y[, "S"])[month  >= (i-1)/nKappa & month < i /nKappa]
+        r[ , "I", paste("k", i, sep ="")][month  >= (i-1)/nKappa & month < i /nKappa] = (y[,"I"] * y[, "S"])[month  >= (i-1)/nKappa & month < i /nKappa]
     }
     return(r)
 }
@@ -287,13 +291,14 @@ tvDSIRfn$d2fdxdp <- function (t, y, p, more)
 {
     r = array(0, c(length(t), ncol(y), ncol(y), length(p)))
     dimnames(r) = list(NULL, colnames(y), colnames(y), names(p))
+    nKappa <- more$nKappa
     r[, "I", "I", "gamma"] = -1
     month <- t %% 1
-    for(i in 1:12){
-        r[ , "S", "S", paste("k", i, sep ="")][month  >= (i-1)/12 & month < i /12] = - y[,"I"][month  >= (i-1)/12 & month < i /12]
-        r[ , "I", "S", paste("k", i, sep ="")][month  >= (i-1)/12 & month < i /12] = y[,"I"][month  >= (i-1)/12 & month < i /12]
-        r[ , "S", "I", paste("k", i, sep ="")][month  >= (i-1)/12 & month < i /12] = - y[,"S"][month  >= (i-1)/12 & month < i /12]
-        r[ , "I", "I", paste("k", i, sep ="")][month  >= (i-1)/12 & month < i /12] = y[,"S"][month  >= (i-1)/12 & month < i /12]
+    for(i in 1:nKappa){
+        r[ , "S", "S", paste("k", i, sep ="")][month  >= (i-1)/nKappa & month < i /nKappa] = - y[,"I"][month  >= (i-1)/nKappa & month < i /nKappa]
+        r[ , "I", "S", paste("k", i, sep ="")][month  >= (i-1)/nKappa & month < i /nKappa] = y[,"I"][month  >= (i-1)/nKappa & month < i /nKappa]
+        r[ , "S", "I", paste("k", i, sep ="")][month  >= (i-1)/nKappa & month < i /nKappa] = - y[,"S"][month  >= (i-1)/nKappa & month < i /nKappa]
+        r[ , "I", "I", paste("k", i, sep ="")][month  >= (i-1)/nKappa & month < i /nKappa] = y[,"S"][month  >= (i-1)/nKappa & month < i /nKappa]
     }
     return(r)
 }
