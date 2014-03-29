@@ -5,7 +5,7 @@ library(CollocInfer)
 library(nnls)
 load("data-2dadj-sd01.RData")
 
-times <- seq(-DSIR.pars["tau2"], max(times), by = 0.1)
+times <- seq(-DSIR.pars["tau2"], 25, by = 0.1)
 times0 <- knots0 <- times[times >= 0]
 times.d <- knots.d <- times[times >= 5]
 norder = 3
