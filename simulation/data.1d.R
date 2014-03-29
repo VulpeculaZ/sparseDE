@@ -37,8 +37,7 @@ times0 <- times[times >= 0]
 
 set.seed(42)
 data.res <- list()
-for(i in 1:100){
-    print(i)
+for(i in 1:500){
     xout <- c()
     data.res[[i]] <- list()
     xout <- cbind(xout, yout[,2] + rnorm(length(yout[,2]), sd = 0.01))
@@ -52,8 +51,4 @@ for(i in 1:100){
     initBeta <- rep(0.1, 16) + runif(16, -0.02, 0.02)
     data.res[[i]]$initBeta <- initBeta
 }
-
-runTime <- Sys.time() - begTime
-print(runTime)
-
-save(data.res, DSIR.pars, runTime, file = "data-2dadj-sd01.RData")
+save(data.res, DSIR.pars, file = "data-2dadj-sd01.RData")
