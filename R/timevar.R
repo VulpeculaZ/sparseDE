@@ -246,6 +246,7 @@ tvDSIRfn <- list()
 tvDSIRfn$fn <- function (t, y, p, more)
 {
     r = y
+    nKappa <- more$nKappa
     pk <- p[(length(p) - (nKappa - 1)):length(p)]
     r[, "S"] =  - tvtrans(t, pk) * y[,"I"] * y[, "S"] + 8000 * (sin(t / pi) / 2 + 2)
     r[, "I"] =  tvtrans(t, pk) * y[,"I"] * y[, "S"] - p["gamma"] * y[, "I"]
@@ -254,6 +255,7 @@ tvDSIRfn$fn <- function (t, y, p, more)
 
 tvDSIRfn$dfdx <- function (t, y, p, more)
 {
+    nKappa <- more$nKappa
     r = array(0, c(length(t), ncol(y), ncol(y)))
     dimnames(r) = list(NULL, colnames(y), colnames(y))
     pk <- p[(length(p) - (nKappa - 1)):length(p)]
