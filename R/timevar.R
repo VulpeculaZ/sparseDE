@@ -135,7 +135,7 @@ LS.tv <- function(fn, data, times, pars, kappa, coefs = NULL, basisvals = NULL,
         Z0 <- rowSums(Zdf)
         beta0 <- sum((y - Xdf %*% pars ) * Z0) / sum(Z0^2)
         lambda0 <- max(abs(as.vector(t(y -Xdf %*% pars - Z0 * beta0) %*% sweep(Zdf, 1, mean(Zdf)))))
-        lambda = exp(seq(log(lambda0), log(lambda0 * 0.001), len = 50))
+        lambda = exp(seq(log(lambda0), log(lambda0 * 0.01), len = 50))
         pars.pen <- kappa.pen <- coefs.pen <- list()
         bic <- f <- rep(NA, length(lambda))
         for(i in 1:length(lambda)){
@@ -154,11 +154,7 @@ LS.tv <- function(fn, data, times, pars, kappa, coefs = NULL, basisvals = NULL,
         i.select <- which(bic == min(bic))
         sel.res <- list(pars.pen = pars.pen[[i.select]], kappa.pen = kappa.pen[[i.select]], bic = bic[i.select], coefs.pen = coefs.pen[[i.select]], lambda = lambda[i.select])
     }
-    if(control.out$lambda.sparse < 0){
-        return(list( data = data,res = res, select = sel.res))
-    }else{
-        return(list( data = data,res = res, ncoefs = ncoefs))
-    }
+    return(list(select = sel.res))
 }
 
 
