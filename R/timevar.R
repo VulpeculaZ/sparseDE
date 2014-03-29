@@ -111,6 +111,7 @@ LS.tv <- function(fn, data, times, pars, kappa, coefs = NULL, basisvals = NULL,
     dims = dim(data)
     lik = profile.obj$lik
     proc = profile.obj$proc
+    proc$more$more$nKappa <- length(kappa)
     coefs = profile.obj$coefs
     data = profile.obj$data
     times = profile.obj$times
@@ -140,7 +141,7 @@ LS.tv <- function(fn, data, times, pars, kappa, coefs = NULL, basisvals = NULL,
         bic <- f <- rep(NA, length(lambda))
         for(i in 1:length(lambda)){
             lambda.sparse <- lambda[i]
-            res.sparse <- penalized(response = y, penalized = Zdf, unpenalized = Xdf, lambda2 = lambda0, fusedl = TRUE, positive = TRUE)
+            res.sparse <- penalized(response = y, penalized = Zdf, unpenalized = Xdf, lambda2 = lambda0, fusedl = TRUE, positive = TRUE, trace = FALSE)
             pars.pen[[i]] <- res.sparse@unpenalized
             kappa.pen[[i]] <- res.sparse@penalized
             Ires <- inneropt(data, times, par = c(pars.pen[[i]],kappa.pen[[i]]),  ncoefs, lik, proc, in.meth, control.in)
