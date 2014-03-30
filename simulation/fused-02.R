@@ -21,6 +21,7 @@ basis <- create.bspline.basis(range=range(knots), nbasis=nbasis, norder=norder, 
 set.seed(42)
 sim.res <- list()
 for(i in 1:100){
+    print(i)
     initPars <- nnlist[[i]]$res$pars
     initKappa <- nnlist[[i]]$res$kappa
     coefs <- nnlist[[i]]$res$coefs
