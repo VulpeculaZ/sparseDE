@@ -56,7 +56,7 @@ nls.sparse <- function(pars, beta, active, basisvals, fdobj0, times, data, coefs
             beta <- res@penalized
         }
         if(control.out$method == "enet"){
-            res <- penalized(response = y, penalized = Zdf, unpenalized = Xdf, lambda1 = lambda.sparse, lambda2 = 0.00001, positive = TRUE)
+            res <- penalized(response = y, penalized = Zdf, unpenalized = Xdf, lambda1 = lambda.sparse, lambda2 = 0.00001, positive = TRUE, trace = FALSE)
             pars <- res@unpenalized
             beta <- res@penalized
         }
@@ -559,7 +559,7 @@ LS.sparse <- function(fn, data, times, basisvals = NULL,
         bic <- f <- rep(NA, length(lambda))
         for(i in 1:length(lambda)){
             lambda.sparse <- lambda[i]
-            res.sparse <- penalized(response = y, penalized = Zdf, unpenalized = Xdf, lambda1 = lambda[i], positive = TRUE)
+            res.sparse <- penalized(response = y, penalized = Zdf, unpenalized = Xdf, lambda1 = lambda[i], positive = TRUE, trace = FALSE)
             pars.pen[[i]] <- res.sparse@unpenalized
             beta.pen[[i]] <- res.sparse@penalized
             Ires <- inneropt.DDE(data, times, par = pars.pen[[i]], beta = beta.pen[[i]],  ncoefs, lik, proc, in.meth, control.in, basisvals = basisvals, fdobj0 = fdobj0)
