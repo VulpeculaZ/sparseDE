@@ -2,6 +2,8 @@ begTime <- Sys.time()
 source("./R/sparse.R")
 source("./R/LS.sparse.R")
 source("./R/DSIRfnSparse.R")
+source("./R/poslasso.R")
+
 library(CollocInfer)
 library(nnls)
 library(penalized)
