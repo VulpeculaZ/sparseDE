@@ -7,18 +7,13 @@ library(CollocInfer)
 library(deSolve)
 library(nnls)
 
-## Function to simulate DSIR
 ## Function to simulate  SIR model:
-
 tvSIR.gen <- function(t, y, parms){
     sint <- 8000 * (sin(t / parms["f"] / pi) / 2 + 2)
     dyS <- - (tvtrans(t, kappa)) * y[2] * y[1] +  sint
     dyI <- (tvtrans(t, kappa)) * y[2] * y[1] - parms["gamma"] * y[2]
     list(c(dyS, dyI))
 }
-
-
-
 yinit <- c(5000, 800)
 times <- seq(0, 5, by = 1/52)
 tvSIR.pars <- c(10, 1)
