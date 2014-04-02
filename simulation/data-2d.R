@@ -40,8 +40,8 @@ data.res <- list()
 for(i in 1:500){
     xout <- c()
     data.res[[i]] <- list()
-    xout <- cbind(xout, yout[,2] + rnorm(length(yout[,2]), sd = 0.01))
-    xout <- cbind(xout, yout[,3] + rnorm(length(yout[,2]), sd = 0.01))
+    xout <- cbind(xout, yout[,2] + rnorm(length(yout[,2]), sd = 0.02))
+    xout <- cbind(xout, yout[,3] + rnorm(length(yout[,2]), sd = 0.02))
     ## points(times, xout)
     xout0 <- xout[times >= 0,]
     data.res[[i]]$xout <- xout
@@ -51,4 +51,5 @@ for(i in 1:500){
     initBeta <- rep(0.1, 16) + runif(16, -0.02, 0.02)
     data.res[[i]]$initBeta <- initBeta
 }
-save(data.res, DSIR.pars, file = "data-2dadj-sd01.RData")
+curseed <- get(".Random.seed", .GlobalEnv)
+save(data.res, DSIR.pars, curseed, file = "data-2dadj-sd02.RData")

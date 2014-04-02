@@ -64,12 +64,13 @@ for(i in 1:length(tv.nnls)){
     gamma.nnls <- c(gamma.nnls, tv.nnls[[i]]$res$pars)
 }
 
+mean(gamma.nnls)
 library(reshape2)
 library(ggplot2)
 colnames(kappa.nnls) <- paste("k", c(1:12), sep="")
 kappa.df <- melt(as.data.frame(kappa.nnls))
-pdf("tv-nnls-02.pdf", 7,4)
-ggplot(kappa.df ,aes(x = variable,y = value))  + geom_boxplot()
+pdf("tv-nnls-02.pdf", 9,5)
+ggplot(kappa.df ,aes(x = variable,y = value))  + geom_boxplot() + ylim(0,0.02)
 dev.off()
 
 
@@ -118,8 +119,8 @@ for(i in 1:50){
 minbic <- apply(bic, 2, min, na.rm = "TRUE")
 posminbic <- apply(sweep(bic, 2 , minbic, "=="),2,which)
 
-## Including all
-kappamat <- matrix(NA, 100, 12)
+## Including all lambda's
+kappaMat <- matrix(NA, 100, 12)
 pars <- c()
 fdp.kappa <- fnp.kappa <- 0
 for(i in 1:100){
@@ -138,10 +139,38 @@ library(reshape2)
 library(ggplot2)
 colnames(kappaMat) <- paste("k", c(1:12), sep="")
 kappa.df <- melt(as.data.frame(kappaMat))
-pdf("tv-fused-02.pdf", 7,4)
+pdf("tv-fused-02.pdf", 9,5)
 ggplot(kappa.df ,aes(x = variable,y = value))  + geom_boxplot() + ylim(0,0.02 )
 dev.off()
 
 
 ##################################################
+## Parse 100 fused-lasso fitting results of estimating time varying coefficients
+## Fused-lasso was run at outer-iteration nnls converged
+## Simulation script:
+## fused-tv-02.R
+## Wed Apr  2 14:18:36 CDT 2014
+##################################################
 load("fused-tv02.RData")
+tv.fused1 <- sim.res
+pars.true <- 10
+kappa.true <- rep(0.005, 12)
+kappa.true[10:12] <- 0.002
+
+kappa.fused1 <- gamma.fused1  <- c()
+for(i in 1:length(tv.fused1)){
+    kappa.fused1 <- rbind(kappa.fused1, tv.fused1[[i]]$kappa)
+    gamma.fused1 <- c(gamma.fused1, tv.fused1[[i]]$pars)
+}
+
+fdp <- sum((kappa.fused1[,-12] - kappa.fused1[,-1])[,-9] != 0 ) / length((kappa.fused1[,-12] - kappa.fused1[,-1])[,-9])
+fnp <- sum(kappa.fused1[,9]-kappa.fused1[,10] == 0) / dim(kappa.fused1)[1]
+mean(gamma.fused1)
+
+library(reshape2)
+library(ggplot2)
+colnames(kappa.fused1) <- paste("k", c(1:12), sep="")
+kappa.df <- melt(as.data.frame(kappa.fused1))
+pdf("tv-fused1-02.pdf", 9, 5)
+ggplot(kappa.df ,aes(x = variable,y = value))  + geom_boxplot() + ylim(0,0.02 )
+dev.off()
