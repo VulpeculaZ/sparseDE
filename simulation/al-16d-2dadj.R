@@ -60,4 +60,4 @@ for(i in 1:length(dataRange)){
 runTime <- Sys.time() - begTime
 scriptName <- "al-16d-2dadj.R"
 print(runTime)
-save(nnls.res, DSIR.pars, runTime, scriptName, file = filename)
+save(al.res, DSIR.pars, runTime, scriptName, file = filename)

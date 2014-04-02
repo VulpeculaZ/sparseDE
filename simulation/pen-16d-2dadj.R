@@ -58,4 +58,4 @@ for(i in 1:length(dataRange)){
 runTime <- Sys.time() - begTime
 scriptName <- "pen-16d-2dadj.R"
 print(runTime)
-save(nnls.res, DSIR.pars, runTime, scriptName, file = filename)
+save(pen.res, DSIR.pars, runTime, scriptName, file = filename)

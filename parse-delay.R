@@ -33,6 +33,72 @@ pdf(file = "nnls-16d-adj.pdf", width = 9,height = 5)
 ggplot(beta.df ,aes(x = variable,y = value))  + geom_boxplot()
 dev.off()
 
+##################################################
+## Parse 500 penalized fitting results of two adjecent delays
+## Penalization is done at the last iteration
+## Simulation script:
+## pen-16d-2dadj.R
+##################################################
+
+pars.hat <- beta.hat <- c()
+beta.true <- rep(0, 16)
+beta.true[c(7,8)] <- 2
+pars.true <- 0.5
+
+for(i in 0:19){
+    load(paste("pen-2dadj-sd01-", i, ".RData", sep=""))
+    for(j in 1:25){
+        pars.hat <- c(pars.hat, pen.res[[j]]$pars)
+        beta.hat <- rbind(beta.hat, pen.res[[j]]$beta)
+    }
+}
+
+cat("pen")
+fdp <- sum(beta.hat[,-c(7,8)] != 0) / length(beta.hat[,-c(7,8)])
+print(fdp)
+fnp <- sum(beta.hat[,c(7,8)] == 0) / length(beta.hat[,c(7,8)])
+print(fnp)
+
+library(reshape2)
+library(ggplot2)
+colnames(beta.hat) <- paste("beta", 1:16, sep = ".")
+beta.df <- melt(as.data.frame(beta.hat))
+pdf(file = "pen-16d-adj.pdf", width = 9,height = 5)
+ggplot(beta.df ,aes(x = variable,y = value))  + geom_boxplot()
+dev.off()
+
+##################################################
+## Parse 500 nnls fitting results of two adjecent delays
+## Simulation script:
+## al-16d-2dadj.R
+##################################################
+
+pars.hat <- beta.hat <- c()
+beta.true <- rep(0, 16)
+beta.true[c(7,8)] <- 2
+pars.true <- 0.5
+
+for(i in 0:19){
+    load(paste("al-2dadj-sd01-", i, ".RData", sep=""))
+    for(j in 1:25){
+        pars.hat <- c(pars.hat, al.res[[j]]$pars)
+        beta.hat <- rbind(beta.hat, al.res[[j]]$beta)
+    }
+}
+
+cat("Adaptive LASSO")
+fdp <- sum(beta.hat[,-c(7,8)] != 0) / length(beta.hat[,-c(7,8)])
+print(fdp)
+fnp <- sum(beta.hat[,c(7,8)] == 0) / length(beta.hat[,c(7,8)])
+print(fnp)
+
+library(reshape2)
+library(ggplot2)
+colnames(beta.hat) <- paste("beta", 1:16, sep = ".")
+beta.df <- melt(as.data.frame(beta.hat))
+pdf(file = "nnls-16d-adj.pdf", width = 9,height = 5)
+ggplot(beta.df ,aes(x = variable,y = value))  + geom_boxplot()
+dev.off()
 
 ##################################################
 ## Parse 100 lasso fitting results of two seperate delays
