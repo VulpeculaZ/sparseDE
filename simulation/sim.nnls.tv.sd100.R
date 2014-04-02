@@ -63,9 +63,9 @@ for(i in 1:100){
     names(initKappa) <- c("k1", "k2", "k3","k4","k5","k6","k7","k8","k9","k10","k11", "k12")
     tv.fit <- Profile.LS.tv(tvDSIRfn, tvData, times=times, pars = initPars, kappa = initKappa, coefs = coefs, basisvals = basis, lambda = 1000, in.meth='nlminb', control.out = list(method = "nnls", maxIter = 20, echo = FALSE, lambda.sparse = 0))
     sim.res[[i]] <- tv.fit
-    save(sim.res, initPars, initKappa,  file ="sim.tv02.sd100.RData")
+    curseed <- get(".Random.seed", .GlobalEnv)
+    save(sim.res, curseed, file ="sim.tv02.sd100.RData")
 }
-
 curseed <- get(".Random.seed", .GlobalEnv)
 runTime <- Sys.time() - begTime
 print(runTime)
