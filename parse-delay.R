@@ -1,5 +1,5 @@
 ##################################################
-## Parse 500 nnls fitting results of two adjecent delays
+## Parse 500 nnls fitting results of two adjecent delays, sd = 0.01
 ## Simulation script:
 ## nnls-16d-2dadj.R
 ## Commit: df114f8982bc1c11c228a4de5ca507198df08e66
@@ -34,10 +34,12 @@ ggplot(beta.df ,aes(x = variable,y = value))  + geom_boxplot()
 dev.off()
 
 ##################################################
-## Parse 500 penalized fitting results of two adjecent delays
+## Parse 500 penalized fitting results of two adjecent delays, sd = 0.01
 ## Penalization is done at the last iteration
 ## Simulation script:
 ## pen-16d-2dadj.R
+## Commit: 471e1186e954baed9300525f4de0a657bf994793
+## Thu Apr  3 10:49:45 CDT 2014
 ##################################################
 
 pars.hat <- beta.hat <- c()
@@ -53,11 +55,15 @@ for(i in 0:19){
     }
 }
 
-cat("pen")
+cat("pen \n")
 fdp <- sum(beta.hat[,-c(7,8)] != 0) / length(beta.hat[,-c(7,8)])
 print(fdp)
 fnp <- sum(beta.hat[,c(7,8)] == 0) / length(beta.hat[,c(7,8)])
 print(fnp)
+colMeans(beta.hat)
+sum(colMeans(beta.hat))
+mean(pars.hat)
+
 
 library(reshape2)
 library(ggplot2)
@@ -68,9 +74,11 @@ ggplot(beta.df ,aes(x = variable,y = value))  + geom_boxplot()
 dev.off()
 
 ##################################################
-## Parse 500 nnls fitting results of two adjecent delays
+## Parse 500 nnls fitting results of two adjecent delays, sd = 0.01
 ## Simulation script:
 ## al-16d-2dadj.R
+## Commit: f771c451e6e3bbf8cd243346dd9044f84c533e3d
+## Wed Apr  2 13:58:10 CDT 2014
 ##################################################
 
 pars.hat <- beta.hat <- c()
@@ -86,19 +94,61 @@ for(i in 0:19){
     }
 }
 
-cat("Adaptive LASSO")
+cat("Adaptive LASSO \n")
 fdp <- sum(beta.hat[,-c(7,8)] != 0) / length(beta.hat[,-c(7,8)])
 print(fdp)
 fnp <- sum(beta.hat[,c(7,8)] == 0) / length(beta.hat[,c(7,8)])
 print(fnp)
+colMeans(beta.hat)
+sum(colMeans(beta.hat))
+mean(pars.hat)
 
 library(reshape2)
 library(ggplot2)
 colnames(beta.hat) <- paste("beta", 1:16, sep = ".")
 beta.df <- melt(as.data.frame(beta.hat))
-pdf(file = "nnls-16d-adj.pdf", width = 9,height = 5)
+pdf(file = "al-16d-adj.pdf", width = 9,height = 5)
 ggplot(beta.df ,aes(x = variable,y = value))  + geom_boxplot()
 dev.off()
+
+##################################################
+## Parse 500 nnls fitting results of two adjecent delays, sd = 0.02
+## Simulation script:
+## nnls-16d-2dadj.R
+## Commit: 471e1186e954baed9300525f4de0a657bf994793
+## Thu Apr  3 10:59:04 CDT 2014
+##################################################
+
+pars.hat <- beta.hat <- c()
+beta.true <- rep(0, 16)
+beta.true[c(7,8)] <- 2
+pars.true <- 0.5
+
+for(i in 0:19){
+    load(paste("nnls-2dadj-sd02-", i, ".RData", sep=""))
+    for(j in 1:25){
+        pars.hat <- c(pars.hat, nnls.res[[j]]$pars)
+        beta.hat <- rbind(beta.hat, nnls.res[[j]]$beta)
+    }
+}
+
+cat("nnls")
+fdp <- sum(beta.hat[,-c(7,8)] != 0) / length(beta.hat[,-c(7,8)])
+print(fdp)
+fnp <- sum(beta.hat[,c(7,8)] == 0) / length(beta.hat[,c(7,8)])
+print(fnp)
+colMeans(beta.hat)
+sum(colMeans(beta.hat))
+mean(pars.hat)
+
+library(reshape2)
+library(ggplot2)
+colnames(beta.hat) <- paste("beta", 1:16, sep = ".")
+beta.df <- melt(as.data.frame(beta.hat))
+pdf(file = "nnls-16d-adj-sd02.pdf", width = 9,height = 5)
+ggplot(beta.df ,aes(x = variable,y = value))  + geom_boxplot()
+dev.off()
+rm(list = ls())
 
 ##################################################
 ## Parse 100 lasso fitting results of two seperate delays

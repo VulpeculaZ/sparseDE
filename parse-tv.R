@@ -174,3 +174,65 @@ kappa.df <- melt(as.data.frame(kappa.fused1))
 pdf("tv-fused1-02.pdf", 9, 5)
 ggplot(kappa.df ,aes(x = variable,y = value))  + geom_boxplot() + ylim(0,0.02 )
 dev.off()
+
+
+##################################################
+## Parse 100 nnls fitting results of estimating time varying coefficients
+## Noise sd = 100
+## Simulation script:
+## sim.nnls.tv.sd100.R
+## Commit: 471e1186e954baed9300525f4de0a657bf994793
+## Fri Apr  4 15:19:41 CDT 2014
+##################################################
+
+load("sim.tv02.sd100.RData")
+tv.nnls <- sim.res
+pars.true <- 10
+kappa.true <- rep(0.005, 12)
+kappa.true[10:12] <- 0.002
+
+kappa.nnls <- gamma.nnls  <- c()
+for(i in 1:length(tv.nnls)){
+    kappa.nnls <- rbind(kappa.nnls, tv.nnls[[i]]$res$kappa)
+    gamma.nnls <- c(gamma.nnls, tv.nnls[[i]]$res$pars)
+}
+mean(gamma.nnls)
+
+library(reshape2)
+library(ggplot2)
+colnames(kappa.nnls) <- paste("k", c(1:12), sep="")
+kappa.df <- melt(as.data.frame(kappa.nnls))
+pdf("tv-nnls-sd100.pdf", 9,5)
+ggplot(kappa.df ,aes(x = variable,y = value))  + geom_boxplot() + ylim(0,0.01)
+dev.off()
+
+
+##################################################
+## Parse 100 nnls fitting results of estimating time varying coefficients
+## Noise sd = 200
+## Simulation script:
+## sim.nnls.tv.sd200.R
+## Commit: 471e1186e954baed9300525f4de0a657bf994793
+## Fri Apr  4 15:19:41 CDT 2014
+##################################################
+
+load("sim.tv02.sd200.RData")
+tv.nnls <- sim.res
+pars.true <- 10
+kappa.true <- rep(0.005, 12)
+kappa.true[10:12] <- 0.002
+
+kappa.nnls <- gamma.nnls  <- c()
+for(i in 1:length(tv.nnls)){
+    kappa.nnls <- rbind(kappa.nnls, tv.nnls[[i]]$res$kappa)
+    gamma.nnls <- c(gamma.nnls, tv.nnls[[i]]$res$pars)
+}
+mean(gamma.nnls)
+
+library(reshape2)
+library(ggplot2)
+colnames(kappa.nnls) <- paste("k", c(1:12), sep="")
+kappa.df <- melt(as.data.frame(kappa.nnls))
+pdf("tv-nnls-sd200.pdf", 9,5)
+ggplot(kappa.df ,aes(x = variable,y = value))  + geom_boxplot() #+ ylim(0,0.01)
+dev.off()

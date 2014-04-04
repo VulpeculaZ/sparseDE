@@ -21,9 +21,10 @@ kappa <- rep(0.005, 12)
 kappa[10:12] <- 0.002
 names(tvSIR.pars) <- c("gamma", "f")
 yout <- dede(y = yinit, times = times, func = tvSIR.gen, parms = tvSIR.pars, atol = 1e-10)
-## matplot(yout[,1], yout[,-1], type = "l", lwd = 2, main = "Time Varying SIR Model")
-
-
+pdf("tvSIRsim.pdf", 9, 5)
+matplot(yout[,1], yout[,-1], type = "l", lwd = 2, main = "Time Varying SIR Model", xlab="time", ylab="Numbers of individuals")
+legend("topright", legend = c("S","I"), col=c(1,2), lty = c(1,2), lwd = c(2,2))
+dev.off()
 knots <- times
 norder = 3
 nbasis = length(knots) + norder - 2
