@@ -441,7 +441,7 @@ SplineCoefsErr.DDE <- function(coefs, times, data, lik, proc, pars, beta, sgn = 
     fdnames[[2]] <- attr(coefs2, "dimnames")[[2]]
     fdobj.d <- list(coefs = coefs2, basis = basisvals, fdnames =fdnames)
     attr(fdobj.d, "class") <- "fd"
-    delayProcObj <- delay.fit.sparse(fd0 = fdobj0, fd.d = fdobj.d, times = proc$more$qpts, tau = proc$more$more$tau, beta = beta, ndelay = proc$more$more$ndelay )
+    delayProcObj <- delay.fit.sparse(fd0 = fdobj0, fd.d = fdobj.d, times = proc$more$qpts, tau = proc$more$more$tau, beta = beta, ndelay = proc$more$more$ndelay)
     delayLikObj <- delay.fit.sparse(fd0 = fdobj0, fd.d = fdobj.d, times = times,tau = lik$more$more$tau, beta= beta, ndelay = lik$more$more$ndelay, lik = TRUE)
     lik$more$more$y.d <- delayLikObj$y.d
     proc$more$more$y.d <- delayProcObj$y.d

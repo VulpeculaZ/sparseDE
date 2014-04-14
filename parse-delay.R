@@ -1,4 +1,66 @@
 ##################################################
+## Parse 100 lasso fitting results of two seperate delays
+## Lasso are used in every outer iteration
+## Simulation script:
+## sim.2d.lasso.R
+## Commit: df114f8982bc1c11c228a4de5ca507198df08e66
+## Tue Apr  1 15:55:22 CDT 2014
+##################################################
+
+library(CollocInfer)
+
+times <- seq(0, 25, by = 0.1)
+times.d <- knots.d <- times[times >= 5]
+norder = 3
+nbasis.d = length(knots.d) + norder - 2
+range.d <- range(knots.d)
+basis.d <- create.bspline.basis(range=range.d, nbasis=nbasis.d, norder=norder, breaks=knots.d)
+bvals <- eval.basis(times.d, basis.d, 0)
+bic <- matrix(NA, 50, 100)
+
+for(i in 1:50){
+    filenamei <- paste("lasso2d", i,".RData", sep = "")
+    load(filenamei)
+    if(length(sim.res) != 100)
+        cat("Iterition prematurally terminated:",i, "\n")
+    for(j in 1:length(sim.res)){
+        devals = as.matrix(bvals%*%sim.res[[j]]$ncoefs)
+        f <- sim.res[[j]]$data - devals
+        sd.pen <- sd(f)
+        ll.pen <- - sum(f^2) / (sd.pen^2) / 2 - length(f) * log(sd.pen)
+        bic[i,j] <- -2 * ll.pen + (sum(sim.res[[j]]$res$beta > 0) + length(sim.res[[j]]$res$pars)) * log(length(f))
+    }
+}
+
+minbic <- apply(bic, 2, min)
+posminbic <- apply(sweep(bic, 2 , minbic, "=="),2,which)
+
+
+pars.true <- 0.5
+beta.true <- rep(0,16)
+beta.true[c(4,7)] <- 2
+betaMat <- matrix(NA, 100, 16)
+pars <- c()
+fdp.beta <- fnp.beta <- 0
+for(i in 1:100){
+    filenamei <- paste("lasso2d", posminbic[i],".RData", sep = "")
+    load(filenamei)
+    betaMat[i,] <- sim.res[[i]]$res$beta
+    pars <- c(pars, sim.res[[i]]$res$pars)
+    fdp.beta <-  fdp.beta + sum(sim.res[[i]]$res$beta[-c(4,7)] != 0) / sum(beta.true == 0)
+    fnp.beta <- fnp.beta + sum(sim.res[[i]]$res$beta[c(4,7)] == 0) / 2
+}
+
+fdp.beta / 100
+## 0.1857143
+fnp.beta / 100
+## 0.635
+
+sum(colMeans(betaMat))
+mean(pars)
+
+
+##################################################
 ## Parse 500 nnls fitting results of two adjecent delays, sd = 0.01
 ## Simulation script:
 ## nnls-16d-2dadj.R
@@ -74,7 +136,7 @@ ggplot(beta.df ,aes(x = variable,y = value))  + geom_boxplot()
 dev.off()
 
 ##################################################
-## Parse 500 nnls fitting results of two adjecent delays, sd = 0.01
+## Parse 500 adaptive lasso fitting results of two adjecent delays, sd = 0.01
 ## Simulation script:
 ## al-16d-2dadj.R
 ## Commit: f771c451e6e3bbf8cd243346dd9044f84c533e3d
@@ -151,63 +213,80 @@ dev.off()
 rm(list = ls())
 
 ##################################################
-## Parse 100 lasso fitting results of two seperate delays
-## Lasso are used in every outer iteration
+## Parse 500 penalized fitting results of two adjecent delays, sd = 0.02
 ## Simulation script:
-## sim.2d.lasso.R
-## Commit: df114f8982bc1c11c228a4de5ca507198df08e66
-## Tue Apr  1 15:55:22 CDT 2014
+## pen-16d-2dadj.R
+## Commit: 45f5ae3a8567e5398b8b3048d85035d607b87460
+## Thu Apr 10 09:32:03 CDT 2014
 ##################################################
 
-library(CollocInfer)
+pars.hat <- beta.hat <- c()
+beta.true <- rep(0, 16)
+beta.true[c(7,8)] <- 2
+pars.true <- 0.5
 
-times <- seq(0, 25, by = 0.1)
-times.d <- knots.d <- times[times >= 5]
-norder = 3
-nbasis.d = length(knots.d) + norder - 2
-range.d <- range(knots.d)
-basis.d <- create.bspline.basis(range=range.d, nbasis=nbasis.d, norder=norder, breaks=knots.d)
-bvals <- eval.basis(times.d, basis.d, 0)
-bic <- matrix(NA, 50, 100)
-
-for(i in 1:50){
-    filenamei <- paste("lasso2d", i,".RData", sep = "")
-    load(filenamei)
-    if(length(sim.res) != 100)
-        cat("Iterition prematurally terminated:",i, "\n")
-    for(j in 1:length(sim.res)){
-        devals = as.matrix(bvals%*%sim.res[[j]]$ncoefs)
-        f <- sim.res[[j]]$data - devals
-        sd.pen <- sd(f)
-        ll.pen <- - sum(f^2) / (sd.pen^2) / 2 - length(f) * log(sd.pen)
-        bic[i,j] <- -2 * ll.pen + (sum(sim.res[[j]]$res$beta > 0) + length(sim.res[[j]]$res$pars)) * log(length(f))
+for(i in 0:19){
+    load(paste("pen-2dadj-sd02-", i, ".RData", sep=""))
+    for(j in 1:25){
+        pars.hat <- c(pars.hat, pen.res[[j]]$pars)
+        beta.hat <- rbind(beta.hat, pen.res[[j]]$beta)
     }
 }
 
-minbic <- apply(bic, 2, min)
-posminbic <- apply(sweep(bic, 2 , minbic, "=="),2,which)
+cat("pen\n")
+fdp <- sum(beta.hat[,-c(7,8)] != 0) / length(beta.hat[,-c(7,8)])
+print(fdp)
+fnp <- sum(beta.hat[,c(7,8)] == 0) / length(beta.hat[,c(7,8)])
+print(fnp)
+colMeans(beta.hat)
+sum(colMeans(beta.hat))
+mean(pars.hat)
 
+library(reshape2)
+library(ggplot2)
+colnames(beta.hat) <- paste("beta", 1:16, sep = ".")
+beta.df <- melt(as.data.frame(beta.hat))
+pdf(file = "pen-16d-adj-sd02.pdf", width = 9,height = 5)
+ggplot(beta.df ,aes(x = variable,y = value))  + geom_boxplot()
+dev.off()
+rm(list = ls())
 
+##################################################
+## Parse 500 adaptive-lasso fitting results of two adjecent delays, sd = 0.02
+## Simulation script:
+## al-16d-2dadj.R
+## Commit: 45f5ae3a8567e5398b8b3048d85035d607b87460
+## Thu Apr 10 09:32:03 CDT 2014
+##################################################
+
+pars.hat <- beta.hat <- c()
+beta.true <- rep(0, 16)
+beta.true[c(7,8)] <- 2
 pars.true <- 0.5
-beta.true <- rep(0,16)
-beta.true[c(4,7)] <- 2
-betaMat <- matrix(NA, 100, 16)
-pars <- c()
-fdp.beta <- fnp.beta <- 0
-for(i in 1:100){
-    filenamei <- paste("lasso2d", posminbic[i],".RData", sep = "")
-    load(filenamei)
-    betaMat[i,] <- sim.res[[i]]$res$beta
-    pars <- c(pars, sim.res[[i]]$res$pars)
-    fdp.beta <-  fdp.beta + sum(sim.res[[i]]$res$beta[-c(4,7)] != 0) / sum(beta.true == 0)
-    fnp.beta <- fnp.beta + sum(sim.res[[i]]$res$beta[c(4,7)] == 0) / 2
+
+for(i in 0:19){
+    load(paste("al-2dadj-sd02-", i, ".RData", sep=""))
+    for(j in 1:25){
+        pars.hat <- c(pars.hat, al.res[[j]]$pars)
+        beta.hat <- rbind(beta.hat, al.res[[j]]$beta)
+    }
 }
 
-fdp.beta / 100
-## 0.1857143
-fnp.beta / 100
-## 0.635
+cat("Adaptive LASSO\n")
+fdp <- sum(beta.hat[,-c(7,8)] != 0) / length(beta.hat[,-c(7,8)])
+print(fdp)
+fnp <- sum(beta.hat[,c(7,8)] == 0) / length(beta.hat[,c(7,8)])
+print(fnp)
+colMeans(beta.hat)
+sum(colMeans(beta.hat))
+mean(pars.hat)
 
-sum(colMeans(betaMat))
-mean(pars)
+library(reshape2)
+library(ggplot2)
+colnames(beta.hat) <- paste("beta", 1:16, sep = ".")
+beta.df <- melt(as.data.frame(beta.hat))
+pdf(file = "al-16d-adj-sd02.pdf", width = 9,height = 5)
+ggplot(beta.df ,aes(x = variable,y = value))  + geom_boxplot()
+dev.off()
+rm(list = ls())
 

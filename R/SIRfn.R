@@ -18,6 +18,13 @@ SIRfn$dfdp <- function (t, y, p, more)
     return(r)
 }
 
+SIRfn$d2fdp2 <- function (t, y, p, more)
+{
+    r = array(0, c(length(t), ncol(y), length(p), length(p)))
+    dimnames(r) = list(NULL, colnames(y), names(p), names(p))
+    return(r)
+}
+
 SIRfn$dfdx <- function (t, y, p, more)
 {
     r = array(0, c(length(t), ncol(y), ncol(y)))

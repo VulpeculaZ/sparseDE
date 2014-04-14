@@ -182,7 +182,7 @@ dev.off()
 ## Simulation script:
 ## sim.nnls.tv.sd100.R
 ## Commit: 471e1186e954baed9300525f4de0a657bf994793
-## Fri Apr  4 15:19:41 CDT 2014
+## Thu Apr 10 10:22:42 CDT 2014
 ##################################################
 
 load("sim.tv02.sd100.RData")
@@ -196,6 +196,10 @@ for(i in 1:length(tv.nnls)){
     kappa.nnls <- rbind(kappa.nnls, tv.nnls[[i]]$res$kappa)
     gamma.nnls <- c(gamma.nnls, tv.nnls[[i]]$res$pars)
 }
+fdp <- sum((kappa.nnls[,-12] - kappa.nnls[,-1])[,-9] != 0 ) / length((kappa.nnls[,-12] - kappa.nnls[,-1])[,-9])
+fdp
+fnp <- sum(kappa.nnls[,9]-kappa.nnls[,10] == 0) / dim(kappa.nnls)[1]
+fnp
 mean(gamma.nnls)
 
 library(reshape2)
@@ -203,7 +207,7 @@ library(ggplot2)
 colnames(kappa.nnls) <- paste("k", c(1:12), sep="")
 kappa.df <- melt(as.data.frame(kappa.nnls))
 pdf("tv-nnls-sd100.pdf", 9,5)
-ggplot(kappa.df ,aes(x = variable,y = value))  + geom_boxplot() + ylim(0,0.01)
+ggplot(kappa.df ,aes(x = variable,y = value))  + geom_boxplot()
 dev.off()
 
 
@@ -213,7 +217,7 @@ dev.off()
 ## Simulation script:
 ## sim.nnls.tv.sd200.R
 ## Commit: 471e1186e954baed9300525f4de0a657bf994793
-## Fri Apr  4 15:19:41 CDT 2014
+## Thu Apr 10 10:22:31 CDT 2014
 ##################################################
 
 load("sim.tv02.sd200.RData")
@@ -227,6 +231,10 @@ for(i in 1:length(tv.nnls)){
     kappa.nnls <- rbind(kappa.nnls, tv.nnls[[i]]$res$kappa)
     gamma.nnls <- c(gamma.nnls, tv.nnls[[i]]$res$pars)
 }
+fdp <- sum((kappa.nnls[,-12] - kappa.nnls[,-1])[,-9] != 0 ) / length((kappa.nnls[,-12] - kappa.nnls[,-1])[,-9])
+fdp
+fnp <- sum(kappa.nnls[,9]-kappa.nnls[,10] == 0) / dim(kappa.nnls)[1]
+fnp
 mean(gamma.nnls)
 
 library(reshape2)
