@@ -12,7 +12,7 @@ mDSIRfn$fn <- function (t, y, p, more)
     r = y
     yi.d <- more$y.d[,1]
     b <- more$b
-    r[, "S"] =  - (p["sig"] + transm(t)) * yi.d * y[, "S"] + b ## p["alpha"]
+    r[, "S"] =  - (p["sig"] + transm(t)) * yi.d * y[, "S"] + b * p["alpha"]
     r[, "I"] =  (p["sig"] + transm(t))* yi.d * y[, "S"] - p["gamma"] * y[, "I"]
     return(r)
 }
@@ -45,7 +45,7 @@ mDSIRfn$dfdp <- function (t, y, p, more)
     r = array(0, c(length(t), ncol(y), length(p)))
     dimnames(r) = list(NULL, colnames(y), names(p))
     r[ , "S", "sig"] = - yi.d * y[, "S"]
-    ## r[ , "S", "alpha"] = b
+    r[ , "S", "alpha"] = b
     r[, "I", "gamma"] = - y[, "I"]
     r[ , "I", "sig"] = yi.d * y[, "S"]
     return(r)

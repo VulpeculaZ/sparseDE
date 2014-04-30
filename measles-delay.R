@@ -1,7 +1,6 @@
-
-source("./sources/mDSIRfn.R")
-source("./sources/sparse.R")
-source("./sources/LS.sparse.R")
+source("./R/mDSIRfn.R")
+source("./R/sparse.R")
+source("./R/LS.sparse.R")
 
 library(penalized)
 library(CollocInfer)
@@ -17,11 +16,7 @@ bDf <- read.csv("./Data/bth_ca_on__1921-2002_mn.csv", skip = 5)
 mTimes <- mDf$numdate[mDf$numdate > 1958 & mDf$numdate < 1963]
 mI <- mDf$cases[mDf$numdate > 1958 & mDf$numdate < 1963]
 tmpMonth <- mDf$month[mDf$numdate > 1958 & mDf$numdate < 1963]
-mB <- rep(0, length(tmpMonth))
 
-for(i in 1:length(tmpMonth)){
-    mB[i] <- bDf[which(bDf$year == floor(mTimes[i]) & bDf$month == tmpMonth[i]),3 ] * 7 / 90
-}
 
 mTimes <- mTimes - 1958
 rr     = c(0,round(max(mTimes)))       #  the range of observations times
@@ -68,25 +63,27 @@ mLambda <- c(1,1)
 #  run LS.setup
 mSIR.pars <- c(0.003, 0.2, 50, 0.025)
 names(mSIR.pars) <- c("beta", "sig","gamma", "alpha")
-mPars <- c(0.001, 40) #, 0.35)
-names(mPars) <- c("sig", "gamma") # , "alpha")
+mPars <- c(0.001, 40, 0.1)
+names(mPars) <- c("sig", "gamma", "alpha")
 initBeta <- rep(0, 8)
 initBeta[1:2] <- 0.00005
+procTimes <- c(1, seq(1 + 1/52, 5 - 1/52, by = 2/52), 5)
 
-rep(0, length(procTimes))
+procB <- vector(,length(procTimes))
 for(i in 1:length(procTimes)){
     month <- round((procTimes[i] - floor(procTimes[i])) * 12)
     if(month == 0)
         month <- 1
-    procB[i] <- bDf[which(bDf$year == (floor(procTimes[i])+1958) & bDf$month == month),3 ] * 4
+    procB[i] <- bDf[which(bDf$year == (floor(procTimes[i])+1958) & bDf$month == month),3 ] * 12
 }
+
 
 save(mData, procB, mData.d, bbasis.d, bbasis0, coefs0,  file = "mReal.RData")
 
 ## debugonce(Profile.LS.sparse)
 initBeta
 mPars
-dde.fit <- Profile.LS.sparse(mDSIRfn, mData.d, times.d, pars = mPars, beta = initBeta, coefs = dde.fit$res$coefs, basisvals = bbasis.d, lambda = c(10000000000,10000000000), more = list(b = procB),in.meth='nlminb', delay = delay, basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 2, tau = list(seq(0,7/52, 1/52)), control.out = list(method = "nnls", maxIter = 5, lambda.sparse = 0))
+dde.fit <- Profile.LS.sparse(mDSIRfn, mData.d, times.d, pars = mPars, beta = initBeta, coefs = coefs.d, basisvals = bbasis.d, lambda = c(10,10), more = list(b = procB),in.meth='nlminb', delay = delay, basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 2, tau = list(seq(0,7/52, 1/52)), control.out = list(method = "nnls", maxIter = 5, lambda.sparse = 0))
 
 DEfd.fit <- fd(dde.fit$res$coefs[,2, drop = FALSE],bbasis.d)
 plotfit.fd(mData.d[,2],times.d,DEfd.fit)
