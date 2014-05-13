@@ -23,7 +23,7 @@ mTVSIRfn$dfdx <- function (t, y, p, more)
 {
     r = array(0, c(length(t), ncol(y), ncol(y)))
     dimnames(r) = list(NULL, colnames(y), colnames(y))
-    pk <- p[(length(p) - 11):length(p)]
+    pk <- p[(length(p) - more$nKappa + 1):length(p)]
     r[, "S", "S"] = - tvtrans(t, pk) * y[,"I"]
     r[, "I", "S"] =  tvtrans(t, pk) * y[,"I"]
     r[, "I", "I"] = -p["gamma"]

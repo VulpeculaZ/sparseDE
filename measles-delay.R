@@ -47,8 +47,8 @@ mData.d <- mData[mTimes >= 1,]
 fdnames=list(NULL,c('S', 'I'),NULL)
 DEfd0 <- smooth.basis(times0 ,(mData[,2]),fdPar(bbasis0,1,0.1))
 DEfd.d <- smooth.basis(times.d, (mData[,2])[times0 >= 1],fdPar(bbasis.d,1,0.1))
-coefs0 <- cbind(matrix(800000,bbasis0$nbasis,1), DEfd0$fd$coefs)
-coefs.d <- cbind(matrix(800000,bbasis.d$nbasis,1), DEfd.d$fd$coefs)
+coefs0 <- cbind(matrix(80000,bbasis0$nbasis,1), DEfd0$fd$coefs)
+coefs.d <- cbind(matrix(80000,bbasis.d$nbasis,1), DEfd.d$fd$coefs)
 colnames(coefs0) <- colnames(coefs.d) <- c("S", "I")
 # set up the functional data object for the three variables
 # plot the smooth plus data
@@ -66,7 +66,7 @@ names(mSIR.pars) <- c("beta", "sig","gamma", "alpha")
 mPars <- c(0.001, 40, 0.1)
 names(mPars) <- c("sig", "gamma", "alpha")
 initBeta <- rep(0, 8)
-initBeta[1:2] <- 0.00005
+initBeta[1:2] <- 0.0005
 procTimes <- c(1, seq(1 + 1/52, 5 - 1/52, by = 2/52), 5)
 
 procB <- vector(,length(procTimes))
@@ -83,12 +83,20 @@ save(mData, procB, mData.d, bbasis.d, bbasis0, coefs0,  file = "mReal.RData")
 ## debugonce(Profile.LS.sparse)
 initBeta
 mPars
-dde.fit <- Profile.LS.sparse(mDSIRfn, mData.d, times.d, pars = mPars, beta = initBeta, coefs = coefs.d, basisvals = bbasis.d, lambda = c(10,10), more = list(b = procB),in.meth='nlminb', delay = delay, basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 2, tau = list(seq(0,7/52, 1/52)), control.out = list(method = "nnls", maxIter = 5, lambda.sparse = 0))
-
+dde.fit <- Profile.LS.sparse(mDSIRfn, mData.d, times.d, pars = mPars, beta = initBeta, coefs = coefs.d, basisvals = bbasis.d, lambda = c(10,10), more = list(b = procB),in.meth='nlminb', delay = delay, basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 2, tau = list(seq(0,7/52, 1/52)), control.out = list(method = "nnls", maxIter = 10, lambda.sparse = 0))
 DEfd.fit <- fd(dde.fit$res$coefs[,2, drop = FALSE],bbasis.d)
+pdf()
 plotfit.fd(mData.d[,2],times.d,DEfd.fit)
+dev.off()
 DEfd.fit <- fd(dde.fit$res$coefs[,1, drop = FALSE] ,bbasis.d)
+pdf()
 plotfit.fd(y =mData.d[,2] , argvals = times.d, fdobj = DEfd.fit)
+dev.off()
+
+lasso.fit <- LS.sparse(mDSIRfn, data = mData.d ,times.d, basisvals = bbasis.d, lambda = c(10,10), more = list(b = procB), in.meth='nlminb', delay = delay, basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 2, tau = list(seq(0,7/52, 1/52)), control.out = list(lambda.sparse = -1, pars.c = 50), nnls.res = dde.fit$res)
+
+
+
 
 DEfd.fit <- fd(dde.fit$res$coefs,bbasis.d)
 

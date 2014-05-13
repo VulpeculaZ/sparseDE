@@ -23,14 +23,13 @@ DSIR.gen <- function(t, y, parms){
 
 
 yinit <- c(0.9, 0.1)
-times <- seq(0, 25, by = 0.1)
 SIR.pars <- c(2, 0.25, 0.5, 1)
 names(SIR.pars) <- c("beta", "b","gamma", "f")
 ## Simulation for DSIR
 tau <- c(2,2+1/3)
 DSIR.pars <- c(SIR.pars, tau)
 names(DSIR.pars) <- c("beta", "b","gamma", "f", "tau1","tau2")
-times <- seq(-DSIR.pars["tau2"], max(times), by = 0.1)
+times <- seq(-DSIR.pars["tau2"], 25, by = 0.1)
 yout <- dede(y = yinit, times = times, func = DSIR.gen, parms = DSIR.pars, atol = 1e-10)
 yout0 <- yout[times > 0, ]
 times0 <- times[times >= 0]
