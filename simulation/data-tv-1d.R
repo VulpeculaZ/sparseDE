@@ -48,4 +48,4 @@ for(i in 1:500){
 }
 
 curseed <- get(".Random.seed", .GlobalEnv)
-save(data.res, dtvDSIR.pars, curseed, file = "data-tv-1d-sd100.RData")
+save(data.res, dtvSIR.pars, curseed, file = "data-tv-1d-sd100.RData")

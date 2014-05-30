@@ -28,8 +28,8 @@ nnls.res <- list()
 for(i in 1:length(dataRange)){
     print(dataRange[i])
     ## points(times, xout)
-    xout0 <- data.res[[dataRange[i]]]$xout[times >= 0,]
-    xout.d <- data.res[[dataRange[i]]]$xout[times >= 5,]
+    xout0 <- data.res[[dataRange[i]]]$xout[times >= 0.5,]
+    xout.d <- data.res[[dataRange[i]]]$xout[times >= 1,]
     DEfd0 <- smooth.basis(knots0, xout0, bfdPar0,fdnames=fdnames)$fd
     DEfd.d <- smooth.basis(knots.d, xout.d, bfdPar.d, fdnames=fdnames)$fd
     ## temp.fit <- eval.fd(times.d, DEfd.d)
