@@ -1,5 +1,5 @@
 library(deSolve)
-
+source("./R/mDTVSIRfn.R")
 
 ## Function to simulate DSIR
 dtvSIR.gen <- function(t, y, parms, kappa){
