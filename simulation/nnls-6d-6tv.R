@@ -51,9 +51,9 @@ for(i in 1:length(dataRange)){
     initKappa <- data.res[[dataRange[i]]]$initKappa
     dde.fit <- Profile.LS.tv.delay(fn = mDTVSIRfn, dsirData, times.d, pars = initPars, beta = initBeta, kappa = initKappa, coefs = coefs.d, basisvals = basis.d, lambda = 1000, in.meth='nlminb', delay = delay, basisvals0 = basis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 2, tau = list(seq(0, 10/52, by = 2 / 52)), control.out = list(method = "nnls", maxIter = 15, lambda.sparse = 0))
     nnls.res[[i]] <- dde.fit$res
-    save(nnls.res, DSIR.pars, file =filename)
+    save(nnls.res, file =filename)
 }
 
 runTime <- Sys.time() - begTime
 print(runTime)
-save(nnls.res, DSIR.pars, runTime, file = filename)
+save(nnls.res,  runTime, file = filename)
