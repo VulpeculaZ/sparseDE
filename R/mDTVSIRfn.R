@@ -8,6 +8,18 @@
 ##     return(r)
 ## }
 
+tvtrans.season <- function(t,k){
+    month <- t %% 1
+    r <- rep(0, length(t))
+    ka <- c(k, k[1])
+    for(i in 1:length(k)){
+        mk <- month[month  >= (i-1)/length(k) & month < i /length(k)]
+        r[month  >= (i-1)/length(k) & month < i /length(k)] <- k[i] + (ka[i+1] - k[i]) * (mk - (i-1)/length(k)) * length(k)
+    }
+    return(r)
+}
+
+
 ## Continuous and ensured tvtrans(0,k) == tvtrans(1,k)
 tvtrans <- function(t,k){
     month <- t %% 1
@@ -118,7 +130,6 @@ mDTVSIRfn$d2fdxdx.d <- function (t, y, p, more)
     dimnames(r) = list(NULL, colnames(y), colnames(y), colnames(y))
     r[, "S", "S", "I"] = - tvtrans(t, pk)
     r[, "I", "S", "I"] =  tvtrans(t, pk)
-
     return(r)
 }
 

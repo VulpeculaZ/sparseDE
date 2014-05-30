@@ -44,7 +44,7 @@ for(i in 1:length(procTimes)){
     month <- round((procTimes[i] - floor(procTimes[i])) * 12)
     if(month == 0)
         month <- 1
-    procB[i] <- bDf[which(bDf$year == (floor(procTimes[i])+1958) & bDf$month == month),3 ] * 12 * 0.384
+    procB[i] <- bDf[which(bDf$year == (floor(procTimes[i])+1958) & bDf$month == month),3 ] * 0.384
 }
 
 ## * 12 * 0.384 * (671 + 772) / 11410 comes from:

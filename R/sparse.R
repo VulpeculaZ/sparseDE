@@ -11,12 +11,6 @@ nls.sparse <- function(pars, beta, active, basisvals, fdobj0, times, data, coefs
             linObj <- ProfileSSE.AllPar.sparse(pars = pars, beta = beta, times = times, data = data, coefs = coefs, lik = lik, proc = proc, in.meth = in.meth,control.in = control.in, basisvals = basisvals, fdobj0 = fdobj0)
             f.new <- linObj$f
             f.new <- sum(f.new^2)
-            if(control.out$method == "penalized"){
-                f.new <- f.new + lambda.sparse * sum(abs(beta))
-            }
-            if(control.out$method == "enet"){
-                f.new <- f.new + lambda.sparse * sum(abs(beta)) + 0.0005* sum(beta^2)
-            }
             ## if(control.out$echo == TRUE){
             ## print(x = c(paste("Iter:", i, f.new)))
             ##    cat(pars, beta, "\n")
@@ -270,7 +264,7 @@ Profile.LS.sparse <- function(fn, data, times, pars, beta, coefs = NULL, basisva
     ##################################################
     ## Added delay data and functions
     ##################################################
-    delayProcObj <- delay.fit.sparse(fd0 = fdobj0, fd.d = fdobj.d, times = proc$more$qpts, tau = tau, beta= beta, ndelay = ndelay )
+    delayProcObj <- delay.fit.sparse(fd0 = fdobj0, fd.d = fdobj.d, times = proc$more$qpts, tau = tau, beta= beta, ndelay = ndelay)
     delayLikObj <- delay.fit.sparse(fd0 = fdobj0, fd.d = fdobj.d, times = times,tau = tau, beta= beta, ndelay = ndelay)
     lik$more$more$y.d <- delayLikObj$y.d
     proc$more$more$y.d <- delayProcObj$y.d
