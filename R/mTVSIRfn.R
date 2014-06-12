@@ -14,7 +14,7 @@ mTVSIRfn$fn <- function (t, y, p, more)
     r = y
     pk <- p[(length(p) - more$nKappa + 1):length(p)]
     b <- more$b
-    r[, "S"] =  - tvtrans(t, pk) * y[,"I"] * y[, "S"] + b
+    r[, "S"] =  - tvtrans(t, pk) * y[,"I"] * y[, "S"] + b * p["alpha"]
     r[, "I"] =  tvtrans(t, pk) * y[,"I"] * y[, "S"] - p["gamma"] * y[, "I"]
     return(r)
 }
@@ -35,8 +35,9 @@ mTVSIRfn$dfdp <- function (t, y, p, more)
     r = array(0, c(length(t), ncol(y), length(p)))
     dimnames(r) = list(NULL, colnames(y), names(p))
     nKappa <- more$nKappa
-    r[, "I", "gamma"] = - y[, "I"]
     b <- more$b
+    r[, "I", "gamma"] = - y[, "I"]
+    r[ , "S", "alpha"] = b
     month <- t %% 1
     for(i in 1:nKappa){
         r[ , "S", paste("k", i, sep ="")][month  >= (i-1)/nKappa & month < i /nKappa] = - (y[,"I"] * y[, "S"])[month  >= (i-1)/nKappa & month < i /nKappa]

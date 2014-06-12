@@ -34,7 +34,7 @@ colnames(mData) <- c("S" , "I")
 # To get an initial estimate of the states we smooth the observed I component
 # and set the other coefficients to zero.
 fdnames=list(NULL,c('S', 'I'),NULL)
-DEfd <- smooth.basis(times ,(mData[,2]),fdPar(bbasis, 1, 0.1))
+DEfd <- smooth.basis(mTimes ,(mData[,2]),fdPar(bbasis, 1, 0.1))
 coefs <- cbind(matrix(800000,bbasis$nbasis,1), DEfd$fd$coefs)
 colnames(coefs) = c("S","I")
 
@@ -44,7 +44,7 @@ for(i in 1:length(procTimes)){
     month <- round((procTimes[i] - floor(procTimes[i])) * 12)
     if(month == 0)
         month <- 1
-    procB[i] <- bDf[which(bDf$year == (floor(procTimes[i])+1958) & bDf$month == month),3 ] * 0.384
+    procB[i] <- bDf[which(bDf$year == (floor(procTimes[i])+1958) & bDf$month == month),3 ] * 0.384 * 12
 }
 
 ## * 12 * 0.384 * (671 + 772) / 11410 comes from:
@@ -53,13 +53,13 @@ for(i in 1:length(procTimes)){
 ## \times 0.384 because of the Percentage of National Population of Ontario province
 ## \times (671 + 772) / 11410 because of age group
 
-mPars <- 40
-names(mPars) <- c("gamma")
-mKappa <- rep(1e-5, 12)
+mPars <- c(20, 0.025)
+names(mPars) <- c("gamma", "alpha")
+mKappa <- rep(1e-3, 12)
 names(mKappa) <- c("k1", "k2", "k3","k4","k5","k6","k7","k8","k9","k10","k11", "k12")
 
 ## debug(Profile.LS.tv)
-tv.fit <- Profile.LS.tv(mTVSIRfn, mData, mTimes, pars = mPars, kappa = mKappa, coefs = coefs, basisvals = bbasis, lambda = c(1,1), more = list(b = procB), in.meth='nlminb', control.out = list(method = "nnls", maxIter = 10, lambda.sparse = 0, echo = TRUE))
+tv.fit <- Profile.LS.tv(mTVSIRfn, mData, mTimes, pars = mPars, kappa = mKappa, coefs = coefs, basisvals = bbasis, lambda = c(1,10000), more = list(b = procB), in.meth='nlminb', control.out = list(method = "nnls", maxIter = 10, lambda.sparse = 0, echo = TRUE))
 
 DEfd.fit <- fd(tv.fit$res$coefs[,2, drop = FALSE], bbasis)
 plotfit.fd(mData[,2],mTimes,DEfd.fit)

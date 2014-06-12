@@ -23,7 +23,7 @@ tau <- c(8/52)
 dtvSIR.pars <- c(tvSIR.pars, tau)
 names(dtvSIR.pars) <- c("gamma", "f", "tau1")
 times <- seq(-dtvSIR.pars["tau1"], 5, by = 1/52)
-kappa <- c(rep(0.005, 6), rep( 0.0025, 6))
+kappa <- c(rep(0.005, 3), rep( 0.0025, 3))
 yout <- dede(y = yinit, times = times, func = dtvSIR.gen, parms = dtvSIR.pars, atol = 1e-10, kappa = kappa)
 
 
