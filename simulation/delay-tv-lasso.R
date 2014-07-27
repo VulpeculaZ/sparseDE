@@ -37,15 +37,6 @@ xout0 <- data.res[[1]]$xout[times >= 0.5,]
 DEfd0 <- smooth.basis(knots0, xout0, bfdPar0,fdnames=fdnames)$fd
 coefs0 <- DEfd0$coefs
 
-
-initPars <- nnls.res[[1]]$pars
-initBeta <- nnls.res[[1]]$conv$pars.kappa.beta[14,8:13 ]
-initKappa <- nnls.res[[1]]$kappa
-
-debug(sparse.tv.delay)
-res.tv.delay <- sparse.tv.delay(fn = mDTVSIRfn, data = data.res[[1]]$xout[times >= 1,], times = times.d, pars = initPars, beta = initBeta, kappa = initKappa, coefs = coefs, basisvals = basis.d, lambda = 1000, in.meth='nlminb',  delay = delay, basisvals0 = basis0, coefs0 = coefs0, control.out = list(method = "fused", maxIter = 10, lambda.sparse = -1), nbeta = length(initBeta), ndelay = 2, tau = list(seq(0, 10/52, by = 2 / 52)), nnls.res = nnls.res[[1]])
-
-
 set.seed(42)
 sim.res <- list()
 for(i in 1:length(nnls.res)){

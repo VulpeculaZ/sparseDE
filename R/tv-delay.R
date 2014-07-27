@@ -222,8 +222,8 @@ sparse.tv.delay <- function(fn, data, times, pars, beta, kappa, coefs = NULL, ba
     if(is.null(control.out$pars.c))
         control.out$pars.c <- 100
     if(control.out$lambda.sparse == -1){
-        if(is.null(control.out$maxInnerIter)) maxInnerIter <- 10
-        if(is.null(control.out$lambda.len)) nlambda <- 3
+        if(is.null(control.out$maxInnerIter)) maxInnerIter <- 50
+        if(is.null(control.out$lambda.len)) nlambda <- 10
 
         Zdf1 <- res$Zdf[, 1: length(kappa), drop = FALSE]
         Zdf2 <- res$Zdf[,(1+length(kappa)):(length(kappa)+length(beta)),drop = FALSE]
@@ -242,7 +242,6 @@ sparse.tv.delay <- function(fn, data, times, pars, beta, kappa, coefs = NULL, ba
         pars.pen <- kappa.pen <- beta.pen <- coefs.pen <- list()
         bic <- rep(NA, length(lambda1) * length(lambda2))
         for(i in 1:nlambda){
-            pars.pen[[i]] <- kappa.pen[[i]] <- beta.pen[[i]] <- coefs.pen[[i]] <- list()
             for(j in 1:nlambda){
                 ij <- (i - 1) * nlambda + j
                 lambda.i1 <- lambda1[i]
@@ -253,8 +252,8 @@ sparse.tv.delay <- function(fn, data, times, pars, beta, kappa, coefs = NULL, ba
                 pars.pen[[ij]] <- pars
                 beta.pen[[ij]] <- beta
                 for(k in 1:maxInnerIter){
-                    res.sparse1 <- penalized(response = y1, penalized = Zdf1, unpenalized = Xdf, lambda2 = lambda1[i], fusedl = TRUE, positive = TRUE, trace = FALSE)
-                    res.sparse2 <- penalized(response = y2, penalized = Zdf2, unpenalized = Xdf, lambda1 = lambda2[j], positive = TRUE, trace = FALSE)
+                    res.sparse1 <- penalized(response = y1, penalized = Zdf1, unpenalized = Xdf, lambda2 = lambda1[i], fusedl = TRUE, positive = TRUE, maxiter = 50, trace = FALSE)
+                    res.sparse2 <- penalized(response = y2, penalized = Zdf2, unpenalized = Xdf, lambda1 = lambda2[j], positive = TRUE, maxiter = 50, trace = FALSE)
                     if(sum((kappa.pen[[ij]] - res.sparse1@penalized)^2, (pars.pen[[ij]] - (res.sparse1@unpenalized + res.sparse2@unpenalized)/2)^2, (res.sparse1@unpenalized  - res.sparse2@unpenalized)^2, (beta.pen[[ij]] - res.sparse2@penalized)^2) < eps){
                         kappa.pen[[ij]] <- res.sparse1@penalized
                         pars.pen[[ij]] <- (res.sparse2@unpenalized + res.sparse1@unpenalized) / 2
@@ -276,6 +275,7 @@ sparse.tv.delay <- function(fn, data, times, pars, beta, kappa, coefs = NULL, ba
                 bic[(i-1) * length(lambda1) + j] <- -2 * ll.pen + (length(unique(kappa.pen[[ij]])) + length(pars.pen[[ij]]) + sum(beta.pen[[ij]] != 0)) * log(length(data))
             }
         }
+        browser()
         ij.select <- which(bic == min(bic))
         sel.res <- list(pars.pen = pars.pen[[ij.select]], kappa.pen = kappa.pen[[ij.select]], bic = bic[ij.select], coefs.pen = coefs.pen[[ij.select]], lambda = c(lambda1[ceiling(ij.select / nlambda)], lambda2[ifelse(ij.select %% nlambda == 0, nlambda, ij.select %% nlambda)]))
     }
