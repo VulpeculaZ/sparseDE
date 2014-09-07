@@ -104,13 +104,13 @@ nls.tv.delay <- function(pars, beta, kappa, active, basisvals, fdobj0, times, da
                 break
             }else{
                 if(f.conv[i - 1] - f.new > 0 & f.conv[i - 1] - f.new < control.out$tol){
-                    return(list(pars=pars.old, kappa = kappa.old, coefs = coefs, f = f.new, y = y, Xdf = Xdf, Zdf = Zdf, conv = list(f = f.conv, pars.kappa.beta=pars.kappa.beta, conv.message = "Converged.")))
+                    return(list(pars=pars.old, kappa = kappa.old, beta = beta.old, coefs = coefs, f = f.new, y = y, Xdf = Xdf, Zdf = Zdf, conv = list(f = f.conv, pars.kappa.beta=pars.kappa.beta, conv.message = "Converged.")))
                 }
                 if(f.conv[i - 1] - f.new > 0){
                     break
                 }
                 if(f.conv[i - 1] - f.new < 0 & j == maxStep){
-                    return(list(pars=pars.old, kappa = kappa.old, coefs = coefs, f = f.new,  y = y, Xdf = Xdf, Zdf = Zdf, conv = list(f = f.conv, pars.kappa.beta=pars.kappa.beta, conv.message = "Non-dereasing objective.")))
+                    return(list(pars=pars.old, kappa = kappa.old, beta = beta.old, coefs = coefs, f = f.new,  y = y, Xdf = Xdf, Zdf = Zdf, conv = list(f = f.conv, pars.kappa.beta=pars.kappa.beta, conv.message = "Non-dereasing objective.")))
                 }
                 pars <- 0.5*(pars - pars.old) + pars.old
                 kappa <- 0.5*(kappa - kappa.old) + kappa.old
@@ -235,9 +235,9 @@ sparse.tv.delay <- function(fn, data, times, pars, beta, kappa, coefs = NULL, ba
 
         beta0 <- sum((y- Xdf %*% pars) * Z1) / sum(Z1^2)
         lambda10 <- max(abs(as.vector(t(y -  Xdf %*% pars - Z1 * beta0) %*% sweep(Zdf1, 1, mean(Zdf1)))))
-        lambda1 = exp(seq(log(lambda10), log(lambda10 * 0.01), len = nlambda))
+        lambda1 = exp(seq(log(lambda10 * 0.1), log(lambda10 * 0.001), len = nlambda))
         lambda20 <- max(abs(as.vector(t(y) %*% Zdf2)))
-        lambda2 = exp(seq(log(lambda20), log(lambda20 * 0.01), len = nlambda))
+        lambda2 = exp(seq(log(lambda20), log(lambda20 * 0.001), len = nlambda))
 
         pars.pen <- kappa.pen <- beta.pen <- coefs.pen <- list()
         bic <- rep(NA, length(lambda1) * length(lambda2))
@@ -277,7 +277,7 @@ sparse.tv.delay <- function(fn, data, times, pars, beta, kappa, coefs = NULL, ba
         }
         browser()
         ij.select <- which(bic == min(bic))
-        sel.res <- list(pars.pen = pars.pen[[ij.select]], kappa.pen = kappa.pen[[ij.select]], bic = bic[ij.select], coefs.pen = coefs.pen[[ij.select]], lambda = c(lambda1[ceiling(ij.select / nlambda)], lambda2[ifelse(ij.select %% nlambda == 0, nlambda, ij.select %% nlambda)]))
+        sel.res <- list(pars.pen = pars.pen[[ij.select]], kappa.pen = kappa.pen[[ij.select]], beta.pen = beta.pen[[ij.select]], bic = bic[ij.select], coefs.pen = coefs.pen[[ij.select]], lambda = c(lambda1[ceiling(ij.select / nlambda)], lambda2[ifelse(ij.select %% nlambda == 0, nlambda, ij.select %% nlambda)]))
     }
     return(list(select = sel.res))
 }
