@@ -39,6 +39,7 @@ knots.d <-  seq(1,rr[2],2/52)
 nbasis.d = length(knots.d) + norder - 2
 bbasis.d <- create.bspline.basis(range=c(1,rr[2]), norder=norder, nbasis=nbasis.d, breaks=knots.d)
 
+
 ## Generating Data
 mData <- matrix(NA, length(mI),2)
 mData[,2] <- mI
@@ -97,62 +98,6 @@ names(mKappa) <- c("k1", "k2", "k3","k4","k5","k6","k7","k8","k9","k10","k11", "
 
 ## debug(Profile.LS.tv)
 tv.fit <- Profile.LS.tv.delay(mDTVSIRfn, mData.d, times.d, pars = mPars, kappa = mKappa, coefs = coefs.d, beta = initBeta, basisvals = bbasis.d, lambda = c(1,1), more = list(b = procB), in.meth='nlminb', control.out = list(method = "nnls", maxIter = 10, lambda.sparse = 0, echo = TRUE), delay = delay, basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 2, tau = list(seq(0,7/52, 1/52)))
+save.image()
 
-DEfd.fit <- fd(tv.fit$res$coefs[,2, drop = FALSE], bbasis.d)
-plotfit.fd(mData.d[,2], times.d, DEfd.fit)
-DEfd.fit <- fd(tv.fit$res$coefs[,1, drop = FALSE] ,bbasis.d)
-plotfit.fd(mData[,2] , argvals = times.d, fdobj = DEfd.fit)
-
-dde.fit <- Profile.LS.sparse(mDSIRfn, mData.d, times.d, pars = mPars, beta = initBeta, coefs = coefs.d, basisvals = bbasis.d, lambda = c(10,10), more = list(b = procB),in.meth='nlminb', delay = delay, basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 2, tau = list(seq(0,7/52, 1/52)), control.out = list(method = "nnls", maxIter = 10, lambda.sparse = 0))
-DEfd.fit <- fd(dde.fit$res$coefs[,2, drop = FALSE],bbasis.d)
-pdf()
-plotfit.fd(mData.d[,2],times.d,DEfd.fit)
-dev.off()
-DEfd.fit <- fd(dde.fit$res$coefs[,1, drop = FALSE] ,bbasis.d)
-pdf()
-plotfit.fd(y =mData.d[,2] , argvals = times.d, fdobj = DEfd.fit)
-dev.off()
-
-lasso.fit <- LS.sparse(mDSIRfn, data = mData.d ,times.d, basisvals = bbasis.d, lambda = c(10,10), more = list(b = procB), in.meth='nlminb', delay = delay, basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 2, tau = list(seq(0,7/52, 1/52)), control.out = list(lambda.sparse = -1, pars.c = 50), nnls.res = dde.fit$res)
-
-
-
-
-DEfd.fit <- fd(dde.fit$res$coefs,bbasis.d)
-
-bbasis.s <-  create.bspline.basis(range=c(1+1958,rr[2]+1958), norder=norder, nbasis=nbasis.d, breaks=knots.d+ 1958)
-DEfd.s <-  smooth.basis(times.d + 1958, eval.fd(times.d, DEfd.fit), fdPar(bbasis.s,1,0.15))
-pdf("fittedS.pdf", width=7, height=4)
-plotfit.fd(y =mData.d[,2] , argvals = times.d + 1958, fdobj = DEfd.s$fd, ylab = "Weekly Reported Case")
-dev.off()
-save(initBeta, mPars, dde.fit, file = "ml10000.RData")
-
-mMb <- bDf[which(bDf$year >= 1955 & bDf$year < 1964),3 ]
-mMb <- c(mMb, mMb[108]) * 4
-fit.l1 <- dde.fit
-
-
-## Function to simulate  SIR model:
-mDSIR.gen <- function(t, y, parms){
-    if(t < 1.5 + 1/52){
-        lagI <- eval.fd(t - 1/52, DEfd.fit)[2]
-    }
-    else{
-        lagI <- lagvalue(t - parms["tau1"], 2)
-    }
-    yd <- parms["beta1"] *y[2] + parms["beta2"] * lagI
-    sint <- procB[which(procTimes - t == min(procTimes - t))]
-    dyS <-  -(parms["sig"] + transm(t)) * yd * y[1] +  sint
-    dyI <-  (parms["sig"] + transm(t)) * yd * y[1] - parms["gamma"] * y[2]
-    list(c(dyS, dyI))
-}
-
-sim.yinit <- eval.fd(1,DEfd.fit)
-sim.times <- seq(1.5, 5, by = 1/52)
-## Simulation for SIR
-mDSIR.pars <- c(0.15, dde.fit$res$pars["gamma"],dde.fit$res$beta[1:2], 1/52)
-names(mDSIR.pars) <- c("sig","gamma", "beta1", "beta2", "tau1")
-## debugonce(mDSIR.gen)
-yout <- dede(y = sim.yinit, times = sim.times, func = mDSIR.gen, parms = mDSIR.pars, atol = 1e-6)
-matplot(yout[,1], yout[,3], type = "l", lwd = 2, main = "SIR Model")
-
+save(tv.fit, file = "tv-fit.RData")
