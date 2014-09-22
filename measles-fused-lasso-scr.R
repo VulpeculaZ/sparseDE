@@ -297,10 +297,6 @@ nnls.res <- tv.fit$res
 initPars <- nnls.res$pars
 initBeta <- nnls.res$beta
 initKappa <- nnls.res$kappa
-xout0 <- data.res[[dataRange[i]]]$xout[times >= 0.5,]
-xout.d <- data.res[[dataRange[i]]]$xout[times >= 1,]
-DEfd0 <- smooth.basis(knots0, xout0, bfdPar0,fdnames=fdnames)$fd
-coefs0 <- DEfd0$coefs
 
 res.tv.delay <- sparse.tv.delay(fn = mDTVSIRfn, mData.d, times = times.d, pars = initPars, beta = initBeta, kappa = initKappa, basisvals = bbasis.d, lambda = c(1,1), in.meth='nlminb',  delay = delay, basisvals0 = bbasis0, coefs0 = coefs0, control.out = list(method = "fused", maxIter = 10, lambda.sparse = -1), nbeta = length(initBeta), ndelay = 2, tau = list(seq(0, 7/52, by = 1 / 52)), nnls.res = nnls.res)
 
