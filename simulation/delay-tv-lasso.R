@@ -49,7 +49,7 @@ for(i in 1:length(nnls.res)){
     DEfd0 <- smooth.basis(knots0, xout0, bfdPar0,fdnames=fdnames)$fd
     coefs0 <- DEfd0$coefs
     nnls.resi <- nnls.res[[i]]
-    res.tv.delay <- sparse.tv.delay(fn = mDTVSIRfn, xout.d, times = times.d, pars = initPars, beta = initBeta, kappa = initKappa, basisvals = basis.d, lambda = 1000, in.meth='nlminb',  delay = delay, basisvals0 = basis0, coefs0 = coefs0, control.out = list(method = "fused", maxIter = 10, lambda.sparse = -1), nbeta = length(initBeta), ndelay = 2, tau = list(seq(0, 10/52, by = 2 / 52)), nnls.res = nnls.res[[1]])
+    res.tv.delay <- sparse.tv.delay(fn = mDTVSIRfn, xout.d, times = times.d, pars = initPars, beta = initBeta, kappa = initKappa, basisvals = basis.d, lambda = 1000, in.meth='nlminb',  delay = delay, basisvals0 = basis0, coefs0 = coefs0, control.out = list(method = "fused", maxIter = 10, lambda.sparse = -1), nbeta = length(initBeta), ndelay = 2, tau = list(seq(0, 10/52, by = 2 / 52)), nnls.res = nnls.res[[i]])
     sim.res[[i]] <- res.tv.delay
     save(sim.res, file = res.filename)
 }

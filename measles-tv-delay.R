@@ -99,11 +99,25 @@ names(mKappa) <- c("k1", "k2", "k3","k4","k5","k6","k7","k8","k9","k10","k11", "
 tv.fit <- Profile.LS.tv.delay(mDTVSIRfn, mData.d, times.d, pars = mPars, kappa = mKappa, coefs = coefs.d, beta = initBeta, basisvals = bbasis.d, lambda = c(1,1), more = list(b = procB), in.meth='nlminb', control.out = list(method = "nnls", maxIter = 10, lambda.sparse = 0, echo = TRUE), delay = delay, basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 2, tau = list(seq(0,7/52, 1/52)))
 
 DEfd.fit <- fd(tv.fit$res$coefs[,2, drop = FALSE], bbasis.d)
+pdf()
 plotfit.fd(mData.d[,2], times.d, DEfd.fit)
+dev.off()
 DEfd.fit <- fd(tv.fit$res$coefs[,1, drop = FALSE] ,bbasis.d)
 plotfit.fd(mData[,2] , argvals = times.d, fdobj = DEfd.fit)
 
-dde.fit <- Profile.LS.sparse(mDSIRfn, mData.d, times.d, pars = mPars, beta = initBeta, coefs = coefs.d, basisvals = bbasis.d, lambda = c(10,10), more = list(b = procB),in.meth='nlminb', delay = delay, basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 2, tau = list(seq(0,7/52, 1/52)), control.out = list(method = "nnls", maxIter = 10, lambda.sparse = 0))
+mParsTrend <- c(mPars, 0,0)
+names(mParsTrend) <- c("gamma", "pho0", "pho1")
+## TV delay nnls with trend
+source("./R/mDTVtrendSIRfn.R")
+tv.fit <- Profile.LS.tv.delay(mDTVSIRtrfn, mData.d, times.d, pars = mParsTrend, kappa = mKappa, coefs = coefs.d, beta = initBeta, basisvals = bbasis.d, lambda = c(1,1), more = list(b = procB), in.meth='nlminb', control.out = list(method = "nnls", maxIter = 10, lambda.sparse = 0, echo = TRUE), delay = delay, basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 2, tau = list(seq(0,7/52, 1/52)))
+
+DEfd.fit <- fd(tv.fit$res$coefs[,2, drop = FALSE], bbasis.d)
+pdf()
+plotfit.fd(mData.d[,2], times.d, DEfd.fit)
+dev.off()
+DEfd.fit <- fd(tv.fit$res$coefs[,1, drop = FALSE] ,bbasis.d)
+plotfit.fd( argvals = times.d, fdobj = DEfd.fit)
+
 DEfd.fit <- fd(dde.fit$res$coefs[,2, drop = FALSE],bbasis.d)
 pdf()
 plotfit.fd(mData.d[,2],times.d,DEfd.fit)

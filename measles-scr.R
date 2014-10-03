@@ -85,8 +85,8 @@ initBeta <- rep(0, 8)
 initBeta[1:2] <- 0.0005
 
 args <- commandArgs(TRUE)
-lambda1 <- 10^(as.numeric(args[1]) %/% 5)
-lambda2 <- 10^(as.numeric(args[1]) %% 5)
+lambda1 <- 100^(as.numeric(args[1]) %/% 5) / 1000
+lambda2 <- 100^(as.numeric(args[1]) %% 5) / 1000
 ## debugonce(Profile.LS.sparse)
 initBeta
 mPars
@@ -98,7 +98,7 @@ mKappa <- rep(1e-4, 12)
 names(mKappa) <- c("k1", "k2", "k3","k4","k5","k6","k7","k8","k9","k10","k11", "k12")
 
 ## debug(Profile.LS.tv)
-tv.fit <- Profile.LS.tv.delay(mDTVSIRfn, mData.d, times.d, pars = mPars, kappa = mKappa, coefs = coefs.d, beta = initBeta, basisvals = bbasis.d, lambda = c(1,1), more = list(b = procB), in.meth='nlminb', control.out = list(method = "nnls", maxIter = 10, lambda.sparse = 0, echo = TRUE), delay = delay, basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 2, tau = list(seq(0,7/52, 1/52)))
+tv.fit <- Profile.LS.tv.delay(mDTVSIRfn, mData.d, times.d, pars = mPars, kappa = mKappa, coefs = coefs.d, beta = initBeta, basisvals = bbasis.d, lambda = c(lambda1,lambda2), more = list(b = procB), in.meth='nlminb', control.out = list(method = "nnls", maxIter = 10, lambda.sparse = 0, echo = TRUE), delay = delay, basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 2, tau = list(seq(0,7/52, 1/52)))
 
 save(tv.fit, lambda1, lambda2, file = paste("tv-fit",lambda1,lambda2,".RData", sep=""))
 

@@ -1,5 +1,3 @@
-
-
 library(reshape2)
 library(ggplot2)
 colnames(kappa.fused1) <- paste("k", c(1:12), sep="")
