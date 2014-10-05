@@ -1,3 +1,25 @@
+## Has jumps:
+## tvtrans <- function(t,k){
+##     month <- t %% 1
+##     r <- rep(0, length(t))
+##     for(i in 1:length(k)){
+##         r[month  >= (i-1)/length(k) & month < i /length(k)] <- k[i]
+##     }
+##     return(r)
+## }
+
+tvtrans.season <- function(t,k){
+    month <- t %% 1
+    r <- rep(0, length(t))
+    ka <- c(k, k[1])
+    for(i in 1:length(k)){
+        mk <- month[month  >= (i-1)/length(k) & month < i /length(k)]
+        r[month  >= (i-1)/length(k) & month < i /length(k)] <- k[i] + (ka[i+1] - k[i]) * (mk - (i-1)/length(k)) * length(k)
+    }
+    return(r)
+}
+
+
 ## Continuous and ensured tvtrans(0,k) == tvtrans(1,k)
 tvtrans <- function(t,k){
     month <- t %% 1
@@ -17,7 +39,7 @@ mDTVSIRfn$fn <- function (t, y, p, more)
     r = y
     yi.d <- more$y.d[,1]
     pk <- p[(length(p) - more$nKappa + 1):length(p)]
-    b <- more$b
+    b <- 8000 * (sin(t / 1 / pi) / 2 + 2)
     r[, "S"] =  - tvtrans(t, pk) * yi.d * y[, "S"] + b ## * p["alpha"]
     r[, "I"] =  tvtrans(t, pk) * yi.d * y[, "S"] - p["gamma"] * y[, "I"]
     return(r)
@@ -48,7 +70,7 @@ mDTVSIRfn$dfdx.d <- function (t, y, p, more)
 
 mDTVSIRfn$dfdp <- function (t, y, p, more)
 {
-    ## b <- more$b
+    b <- 8000 * (sin(t / 1 / pi) / 2 + 2)
     yi.d <- more$y.d[,1]
     r = array(0, c(length(t), ncol(y), length(p)))
     dimnames(r) = list(NULL, colnames(y), names(p))

@@ -13,9 +13,9 @@ mDf <- read.csv("./Data/meas_ca_on__1939-89_wk.csv", skip = 3)
 bDf <- read.csv("./Data/bth_ca_on__1921-2002_mn.csv", skip = 5)
 ## plot(x = mDf$numdate[mDf$numdate > 1955 & mDf$numdate < 1960], y = mDf$cases[mDf$numdate > 1955 & mDf$numdate < 1960],type = "l")
 
-mTimes <- mDf$numdate[mDf$numdate > 1958 & mDf$numdate < 1963]
+mTimes <- mDf$numdate[mDf$numdate > 1940 & mDf$numdate < 1965]
 mI <- mDf$cases[mDf$numdate > 1958 & mDf$numdate < 1963]
-tmpMonth <- mDf$month[mDf$numdate > 1958 & mDf$numdate < 1963]
+tmpMonth <- mDf$month[mDf$numdate > 1940 & mDf$numdate < 1965]
 mB <- rep(0, length(tmpMonth))
 
 for(i in 1:length(tmpMonth)){
@@ -49,8 +49,6 @@ mData.d <- mData[mTimes >= 1,]
 # To get an initial estimate of the states we smooth the observed I component
 # and set the other coefficients to zero.
 
-
-
 # smooth the log I values
 fdnames=list(NULL,c('S', 'I'),NULL)
 DEfd0 <- smooth.basis(times0 ,(mData[,2]),fdPar(bbasis0,1,0.1))
@@ -65,11 +63,6 @@ DEfd0 <- fd(coefs0,bbasis0, fdnames)
 DEfd.d <- fd(coefs.d,bbasis.d, fdnames)
 
 
-
-## Load result
-load("tv-fit10000.001.RData")
-coefs.d <- tv.fit$res$coefs
-
 procTimes <- c(1, seq(1 + 1/52, 5 - 1/52, by = 2/52), 5)
 procB <- vector(,length(procTimes))
 for(i in 1:length(procTimes)){
@@ -83,22 +76,20 @@ for(i in 1:length(procTimes)){
 #  it available as a functional parameter defined by its three coefficients
 #  run LS.setup
 
-#args <- commandArgs(TRUE)
-#lambda1 <- 100^(as.numeric(args[1]) %/% 5) / 1000
-#lambda2 <- 100^(as.numeric(args[1]) %% 5) / 1000
-lambda1 <- 1000
-lambda2 <- 1
+args <- commandArgs(TRUE)
+lambda1 <- 10^(as.numeric(args[1]) %/% 5) / 1000
+lambda2 <- 10^(as.numeric(args[1]) %% 5) / 1000
 
-## debugonce(Profile.LS.sparse)
-mPars <- tv.fit$res$pars
-mKappa <- rep(1, 12)
-mKappa[c(7,8)] <- 0.5
-names(mKappa) <- c("k1", "k2", "k3","k4","k5","k6","k7","k8","k9","k10","k11", "k12")
-initBeta <- tv.fit$res$beta
+
+mPars <- 50
+names(mPars) <- c("gamma")
+mKappa <- rep(1e-4, 4)
+names(mKappa) <- c("k1", "k2", "k3","k4")
+initBeta <- rep(0, 7)
+initBeta[1:2] <- 0.0005
+
 
 ## debug(Profile.LS.tv)
-tv.fit <- Profile.LS.tv.delay(mDTVSIRfn, mData.d, times.d, pars = mPars, kappa = mKappa, coefs = coefs.d, beta = initBeta, basisvals = bbasis.d, lambda = c(lambda1,lambda2), more = list(b = procB), in.meth='nlminb', control.out = list(method = "nnls", maxIter = 10, lambda.sparse = 0, echo = TRUE), delay = delay, basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 2, tau = list(seq(0,7/52, 1/52)))
+tv.fit <- Profile.LS.tv.delay(mDTVSIRfn, mData.d, times.d, pars = mPars, kappa = mKappa, coefs = coefs.d, beta = initBeta, basisvals = bbasis.d, lambda = c(lambda1,lambda2), more = list(b = procB), in.meth='nlminb', control.out = list(method = "nnls", maxIter = 10, lambda.sparse = 0, echo = TRUE), delay = delay, basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 2, tau = list(seq(0,6/52, 1/52)))
 
-
-save(tv.fit, lambda1, lambda2, file = paste("tv-fit",lambda1,lambda2,".RData", sep=""))
-
+save(tv.fit, lambda1, lambda2, file = paste("mfit02-",lambda1,lambda2,".RData", sep=""))
