@@ -275,7 +275,6 @@ sparse.tv.delay <- function(fn, data, times, pars, beta, kappa, coefs = NULL, ba
                 bic[(i-1) * length(lambda1) + j] <- -2 * ll.pen + (length(unique(kappa.pen[[ij]])) + length(pars.pen[[ij]]) + sum(beta.pen[[ij]] != 0)) * log(length(data))
             }
         }
-        browser()
         ij.select <- which(bic == min(bic))
         sel.res <- list(pars.pen = pars.pen[[ij.select]], kappa.pen = kappa.pen[[ij.select]], beta.pen = beta.pen[[ij.select]], bic = bic[ij.select], coefs.pen = coefs.pen[[ij.select]], lambda = c(lambda1[ceiling(ij.select / nlambda)], lambda2[ifelse(ij.select %% nlambda == 0, nlambda, ij.select %% nlambda)]))
     }
@@ -283,13 +282,13 @@ sparse.tv.delay <- function(fn, data, times, pars, beta, kappa, coefs = NULL, ba
 }
 
 ## Initialize with unobserved data
-Init.Unob.LS.tv.delay <- function(fn, data, times, pars, beta, kappa, coefs = NULL, basisvals = NULL,
+init.unob.LS.tv.delay <- function(fn, data, times, pars, beta, kappa, coefs = NULL, basisvals = NULL,
     lambda, fd.obj = NULL, more = NULL, weights = NULL, quadrature = NULL,
     in.meth = "nlminb", out.meth = "nls", control.in = list(),
     control.out = list(), eps = 1e-06, active = NULL, posproc = FALSE,
     poslik = FALSE, discrete = FALSE, names = NULL, sparse = FALSE,
     likfn = make.id(), likmore = NULL, delay = NULL, tauMax = NULL,
-    basisvals0 = NULL, coefs0 = NULL, nbeta, ndelay, tau)
+    basisvals0 = NULL, coefs0 = NULL, nbeta, ndelay, tau, unob = 1)
 {
     if (is.null(active)) {
         active = 1:length(c(pars, kappa))
@@ -345,9 +344,21 @@ Init.Unob.LS.tv.delay <- function(fn, data, times, pars, beta, kappa, coefs = NU
     proc$more$dfdtau <- dfdbeta.sparse
     proc$more$d2fdxdtau <- d2fxdbeta.sparse
     proc$more$d2fdx.ddtau <- d2fdx.ddbeta.sparse
-
-
-    Ires <- inneropt.DDE(data, times, c(pars, kappa), beta, coefs, lik, proc, in.meth, control.in, basisvals = basisvals, fdobj0 = fdobj0)
-    ncoefs <- Ires$coefs
+    ## Ires <- inneropt.DDE.unob(data, times, c(pars, kappa), beta, coefs[,1:unob], lik, proc, in.meth, control.in, basisvals = basisvals, fdobj0 = fdobj0, coefs.fix = coefs[, (unob+1):dim(coefs)[2]])
+    ncoefs <- inneropt.LS.unob(data, pars, kappa, beta, coefs, lik, proc)
     return(ncoefs)
+}
+
+inneropt.LS.unob <- function(data, pars, kappa, beta, coefs, lik, proc){
+    coefsS <-  coefs[,1, drop = FALSE]
+    coefsI <- coefs[,2, drop = FALSE]
+    I <- as.matrix(proc$bvals$bvals %*% coefsI)
+    I.d <- proc$more$more$y.d
+    dI <- as.matrix(proc$bvals$dbvals %*% coefsI)
+    X1 <- sweep(proc$bvals$bvals, 1, tvtrans(proc$more$qpts, kappa) * I.d ,"*" ) + proc$bvals$dbvals
+    X2 <- sweep(proc$bvals$bvals, 1, tvtrans(proc$more$qpts, kappa) * I.d, "*")
+    X <- rbind(X1, X2)
+    y <- c(proc$more$more$b, as.vector(dI + pars["gamma"] * I))
+    coefs.fit <- lm.fit(x = X, y=y)
+    return(coefs.fit)
 }

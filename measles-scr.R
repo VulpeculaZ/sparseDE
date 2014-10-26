@@ -77,12 +77,15 @@ for(i in 1:length(procTimes)){
 #  list object betamore is now passed into LS.setup, too, in order to make
 #  it available as a functional parameter defined by its three coefficients
 #  run LS.setup
-mSIR.pars <- c(0.003, 0.2, 50) ##, 0.025)
-names(mSIR.pars) <- c("beta", "sig","gamma") ## , "alpha")
-mPars <- c(0.001, 40) ## , 0.1)
-names(mPars) <- c("sig", "gamma") ##, "alpha")
 initBeta <- rep(0, 8)
-initBeta[1:2] <- 0.0005
+initBeta[1:2] <- 0.5
+mPars <- mean(procB) / mean(mData.d[,2])
+names(mPars) <- c("gamma")
+mKappa <- rep(2e-3, 12)
+mKappa[c(6,7,8)] <- 1e-3
+names(mKappa) <- c("k1", "k2", "k3","k4","k5","k6","k7","k8","k9","k10","k11", "k12")
+kappa <- mKappa
+pars <- mPars
 
 args <- commandArgs(TRUE)
 lambda1 <- 100^(as.numeric(args[1]) %/% 5) / 1000
@@ -91,11 +94,9 @@ lambda2 <- 100^(as.numeric(args[1]) %% 5) / 1000
 initBeta
 mPars
 
+coefsS <- init.unob.LS.tv.delay(mDTVSIRfn, mData.d, times.d, pars = mPars, kappa = mKappa, coefs = coefs.d, beta = initBeta, basisvals = bbasis.d, lambda = c(lambda1,lambda2), more = list(b = procB), in.meth='nlminb', control.out = list(method = "nnls", maxIter = 10, lambda.sparse = 0, echo = TRUE), delay = delay, basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 2, tau = list(seq(0,7/52, 1/52)), unob = 1)
 
-mPars <- 50
-names(mPars) <- c("gamma")
-mKappa <- rep(1e-4, 12)
-names(mKappa) <- c("k1", "k2", "k3","k4","k5","k6","k7","k8","k9","k10","k11", "k12")
+coefs.d[, 1] <- coefsS$coefficients
 
 ## debug(Profile.LS.tv)
 tv.fit <- Profile.LS.tv.delay(mDTVSIRfn, mData.d, times.d, pars = mPars, kappa = mKappa, coefs = coefs.d, beta = initBeta, basisvals = bbasis.d, lambda = c(lambda1,lambda2), more = list(b = procB), in.meth='nlminb', control.out = list(method = "nnls", maxIter = 10, lambda.sparse = 0, echo = TRUE), delay = delay, basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 2, tau = list(seq(0,7/52, 1/52)))

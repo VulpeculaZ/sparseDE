@@ -670,3 +670,141 @@ LS.sparse <- function(fn, data, times, basisvals = NULL,
     }
 
 }
+
+
+SplineCoefsDC.DDE.unob <- function(coefs.unob, times, data, lik, proc, pars, beta, sgn = 1, basisvals, fdobj0, coefs.fix){
+    coefs <- cbind(coefs.unob, coefs.fix)
+    fdnames <- list(NULL, NULL, NULL)
+    coefs2 = matrix(coefs, ncol(lik$bvals), length(coefs)/ncol(lik$bvals))
+    fdnames[[2]] <- attr(coefs2, "dimnames")[[2]]
+    fdobj.d <- list(coefs = coefs2, basis = basisvals, fdnames =fdnames)
+    attr(fdobj.d, "class") <- "fd"
+    delayProcObj <- delay.fit.sparse(fd0 = fdobj0, fd.d = fdobj.d, times = proc$more$qpts, tau = proc$more$more$tau, beta = beta, ndelay = proc$more$more$ndelay )
+    delayLikObj <- delay.fit.sparse(fd0 = fdobj0, fd.d = fdobj.d, times = times,tau = lik$more$more$tau, beta= beta, ndelay = lik$more$more$ndelay)
+    lik$more$more$y.d <- delayLikObj$y.d
+    proc$more$more$y.d <- delayProcObj$y.d
+    lik$more$more$bvals.d <- delayLikObj$bvals.d
+    proc$more$more$bvals.d <- delayProcObj$bvals.d
+    proc$more$more$bvals.d.list <- delayProcObj$bvals.d.list
+    proc$more$more$y.d.list <- delayProcObj$y.d.list
+    devals = as.matrix(lik$bvals %*% coefs2)
+    colnames(devals) = proc$more$names
+    g = as.matrix(t(lik$bvals) %*% lik$dfdx(data, times, devals,
+        pars, lik$more)) + proc$dfdc(coefs2, proc$bvals, pars,
+        proc$more)
+    g = as.vector(g)
+    g <- g[1:length(coefs.unob)]
+    return(sgn * g)
+}
+
+## ordering ##
+SplineCoefsErr.DDE.unob <- function(coefs.unob, times, data, lik, proc, pars, beta, sgn = 1, basisvals, fdobj0, coefs.fix){
+    fdnames <- list(NULL, NULL, NULL)
+    coefs <- cbind(coefs.unob, coefs.fix)
+    coefs2 = matrix(coefs, ncol(lik$bvals), length(coefs)/ncol(lik$bvals))
+    fdnames[[2]] <- attr(coefs2, "dimnames")[[2]]
+    fdobj.d <- list(coefs = coefs2, basis = basisvals, fdnames =fdnames)
+    attr(fdobj.d, "class") <- "fd"
+    delayProcObj <- delay.fit.sparse(fd0 = fdobj0, fd.d = fdobj.d, times = proc$more$qpts, tau = proc$more$more$tau, beta = beta, ndelay = proc$more$more$ndelay)
+    delayLikObj <- delay.fit.sparse(fd0 = fdobj0, fd.d = fdobj.d, times = times,tau = lik$more$more$tau, beta= beta, ndelay = lik$more$more$ndelay, lik = TRUE)
+    lik$more$more$y.d <- delayLikObj$y.d
+    proc$more$more$y.d <- delayProcObj$y.d
+    ## lik$more$more$bvals.d <- delayLikObj$bvals.d
+    proc$more$more$bvals.d <- delayProcObj$bvals.d
+    proc$more$more$bvals.d.list <- delayProcObj$bvals.d.list
+    proc$more$more$y.d.list <- delayProcObj$y.d.list
+    devals = as.matrix(lik$bvals %*% coefs2)
+    colnames(devals) = proc$more$names
+    f = proc$fn(coefs2, proc$bvals, pars, proc$more)
+    if (!is.null(proc$report)) {
+        print(f)
+    }
+    return(sgn * f)
+}
+
+
+SplineCoefsDC2.DDE.unob <- function(coefs.unob, times, data, lik, proc, pars, beta, sgn = 1, basisvals, fdobj0, coefs.fix){
+    coefs <- cbind(coefs.unob, coefs.fix)
+    fdnames <- list(NULL, NULL, NULL)
+    coefs2 = matrix(coefs, ncol(lik$bvals), length(coefs)/ncol(lik$bvals))
+    fdnames[[2]] <- attr(coefs2, "dimnames")[[2]]
+    fdobj.d <- list(coefs = coefs2, basis = basisvals, fdnames =fdnames)
+    attr(fdobj.d, "class") <- "fd"
+    delayProcObj <- delay.fit.sparse(fd0 = fdobj0, fd.d = fdobj.d, times = proc$more$qpts, tau = proc$more$more$tau, beta = beta, ndelay = proc$more$more$ndelay )
+    delayLikObj <- delay.fit.sparse(fd0 = fdobj0, fd.d = fdobj.d, times = times,tau = lik$more$more$tau, beta= beta, ndelay = lik$more$more$ndelay)
+    lik$more$more$y.d <- delayLikObj$y.d
+    proc$more$more$y.d <- delayProcObj$y.d
+    lik$more$more$bvals.d <- delayLikObj$bvals.d
+    proc$more$more$bvals.d <- delayProcObj$bvals.d
+    proc$more$more$bvals.d.list <- delayProcObj$bvals.d.list
+    proc$more$more$y.d.list <- delayProcObj$y.d.list
+    result = as.matrix(SplineCoefsDC2sparse(coefs, times, data, lik, proc, pars, sgn))
+    result <- result[1:length(coefs.unob), 1:length(coefs.unob)]
+    return(result)
+}
+
+inneropt.DDE.unob <- function(data, times, pars, beta, coefs, lik, proc,
+                         in.meth = "nlminb", control.in = list(),
+                         basisvals, fdobj0, coefs.fix)
+{
+    check.lik.proc.data.coefs(lik, proc, data, times, cbind(coefs, coefs.fix))
+    if (in.meth == "optim") {
+        if (is.null(control.in$trace)) {
+            control.in$trace = 0
+        }
+        if (is.null(control.in$maxit)) {
+            control.in$maxit = 1000
+        }
+        if (is.null(control.in$reltol)){
+            control.in$reltol = 1e-12
+        }
+        if (is.null(control.in$meth)){
+            control.in$meth = "BFGS"
+        }
+        if (is.null(control.in$reportHessian)){
+            control.in$reportHessian = TRUE
+        }
+        imeth = control.in$meth
+        control.in$meth = NULL
+        res = optim(coefs, SplineCoefsErr.DDE.unob, gr = SplineCoefsDC.DDE.unob,
+        hessian = control.in$reportHessian, control = control.in,
+        times = times, data = data, lik = lik, proc = proc, pars = pars,
+        beta = beta, method = imeth, basisvals = basisvals, fdobj0 = fdobj0, coefs.fix = coefs.fix)
+        ncoefs = matrix(c(res$par, coefs.fix), ncol(lik$bvals), length(res$par)/ncol(lik$bvals))
+    }
+    else if (in.meth == "nlminb") {
+        if (is.null(control.in$trace)) {
+            control.in$trace = 0
+        }
+        if (is.null(control.in$eval.max)) {
+            control.in$eval.max = 2000
+        }
+        if (is.null(control.in$iter.max)) {
+            control.in$iter.max = 1000
+        }
+        if (is.null(control.in$rel.tol)) {
+            control.in$rel.tol = 1e-12
+        }
+        if (is.null(control.in$useHessian)) {
+            Hessian = SplineCoefsDC2.DDE.unob
+        }
+        else {
+            Hessian = NULL
+        }
+        ## SplineCoefsErr do not need to be changed.
+        ##
+        res <- nlminb(coefs, SplineCoefsErr.DDE.unob, gradient = SplineCoefsDC.DDE.unob,
+                      hessian = Hessian, control = control.in, times = times,
+                      data = data, lik = lik, proc = proc, pars = pars,
+                      basisvals = basisvals, fdobj0 = fdobj0, beta = beta, coefs.fix = coefs.fix)
+        coefs <- c(res$par, coefs.fix)
+        ncoefs = matrix(coefs, ncol(lik$bvals), length(coefs)/ncol(lik$bvals))
+    }
+    else {
+        stop("Unknown optimizer specified")
+    }
+    if (!is.null(proc$more$names)) {
+        colnames(ncoefs) = proc$more$names
+    }
+    return(list(coefs = ncoefs, res = res))
+}
