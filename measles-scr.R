@@ -82,7 +82,7 @@ initBeta[1:2] <- 0.5
 mPars <- mean(procB) / mean(mData.d[,2])
 names(mPars) <- c("gamma")
 mKappa <- rep(2e-3, 12)
-mKappa[c(6,7,8)] <- 1e-3
+#mKappa[c(6,7,8)] <- 1e-3
 names(mKappa) <- c("k1", "k2", "k3","k4","k5","k6","k7","k8","k9","k10","k11", "k12")
 kappa <- mKappa
 pars <- mPars
@@ -101,5 +101,5 @@ coefs.d[, 1] <- coefsS$coefficients
 ## debug(Profile.LS.tv)
 tv.fit <- Profile.LS.tv.delay(mDTVSIRfn, mData.d, times.d, pars = mPars, kappa = mKappa, coefs = coefs.d, beta = initBeta, basisvals = bbasis.d, lambda = c(lambda1,lambda2), more = list(b = procB), in.meth='nlminb', control.out = list(method = "nnls", maxIter = 10, lambda.sparse = 0, echo = TRUE), delay = delay, basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 2, tau = list(seq(0,7/52, 1/52)))
 
-save(tv.fit, lambda1, lambda2, file = paste("tv-fit",lambda1,lambda2,".RData", sep=""))
+save(tv.fit, lambda1, lambda2, file = paste("tv-fit02",lambda1,lambda2,".RData", sep=""))
 
