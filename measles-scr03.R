@@ -24,7 +24,7 @@ for(i in 1:length(tmpMonth)){
 }
 
 
-mTimes <- mTimes - 1940
+mTimes <- mTimes - 1948
 rr     = c(0,round(max(mTimes)))       #  the range of observations times
 knots  = seq(rr[1],rr[2],2/52)  #  knots at 52 equally spaced values
 norder = 3                      #  the order of the B-spline basis functions,
@@ -64,7 +64,7 @@ DEfd0 <- fd(coefs0,bbasis0, fdnames)
 DEfd.d <- fd(coefs.d,bbasis.d, fdnames)
 
 
-procTimes <- c(1, seq(1 + 1/52, 25 - 1/52, by = 2/52), 25)
+procTimes <- c(1, seq(1 + 1/52, 15 - 1/52, by = 2/52), 15)
 procB <- vector(,length(procTimes))
 for(i in 1:length(procTimes)){
     month <- round((procTimes[i] - floor(procTimes[i])) * 12)
@@ -81,7 +81,7 @@ args <- commandArgs(TRUE)
 lambda1 <- 10^(as.numeric(args[1]) %/% 5) / 1000
 lambda2 <- 10^(as.numeric(args[1]) %% 5) / 1000
 
-initBeta <- rep(0, 8)
+initBeta <- rep(0, 7)
 initBeta[1:2] <- 0.5
 mPars <- c(mean(procB) / mean(mData.d[,2]), 0, 0)
 names(mPars) <- c("gamma", "pho0", "pho1")
@@ -90,7 +90,7 @@ mKappa <- rep(2e-3, 12)
 names(mKappa) <- c("k1", "k2", "k3","k4","k5","k6","k7","k8","k9","k10","k11", "k12")
 
 
-coefsS <- init.unob.LS.tv.delay(mDTVSIRfn, mData.d, times.d, pars = mPars, kappa = mKappa, coefs = coefs.d, beta = initBeta, basisvals = bbasis.d, lambda = c(lambda1,lambda2), more = list(b = procB), in.meth='nlminb', control.out = list(method = "nnls", maxIter = 10, lambda.sparse = 0, echo = TRUE), delay = delay, basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 2, tau = list(seq(0,7/52, 1/52)), unob = 1)
+coefsS <- init.unob.LS.tv.delay(mDTVSIRfn, mData.d, times.d, pars = mPars, kappa = mKappa, coefs = coefs.d, beta = initBeta, basisvals = bbasis.d, lambda = c(lambda1,lambda2), more = list(b = procB), in.meth='nlminb', control.out = list(method = "nnls", maxIter = 10, lambda.sparse = 0, echo = TRUE), delay = delay, basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 2, tau = list(seq(0,6/52, 1/52)), unob = 1)
 coefs.d[, 1] <- coefsS$coefficients
 
 
