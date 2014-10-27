@@ -1,5 +1,6 @@
 source("./R/tv-delay.R")
 source("./R/mDTVtrendSIRfn.R")
+source("./R/mDTVSIRfn.R")
 source("./R/sparse.R")
 source("./R/LS.sparse.R")
 
