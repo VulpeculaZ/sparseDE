@@ -1,5 +1,4 @@
 source("./R/tv-delay.R")
-source("./R/mDTVtrendSIRfn.R")
 source("./R/mDTVSIRfn.R")
 source("./R/sparse.R")
 source("./R/LS.sparse.R")
@@ -14,9 +13,9 @@ mDf <- read.csv("./Data/meas_ca_on__1939-89_wk.csv", skip = 3)
 bDf <- read.csv("./Data/bth_ca_on__1921-2002_mn.csv", skip = 5)
 ## plot(x = mDf$numdate[mDf$numdate > 1955 & mDf$numdate < 1960], y = mDf$cases[mDf$numdate > 1955 & mDf$numdate < 1960],type = "l")
 
-mTimes <- mDf$numdate[mDf$numdate > 1948 & mDf$numdate <= 1963]
-mI <- mDf$cases[mDf$numdate > 1948 & mDf$numdate <= 1963]
-tmpMonth <- mDf$month[mDf$numdate > 1948 & mDf$numdate <= 1963]
+mTimes <- mDf$numdate[mDf$numdate > 1958 & mDf$numdate < 1963]
+mI <- mDf$cases[mDf$numdate > 1958 & mDf$numdate < 1963]
+tmpMonth <- mDf$month[mDf$numdate > 1958 & mDf$numdate < 1963]
 mB <- rep(0, length(tmpMonth))
 
 for(i in 1:length(tmpMonth)){
@@ -24,12 +23,12 @@ for(i in 1:length(tmpMonth)){
 }
 
 
-mTimes <- mTimes - 1940
+mTimes <- mTimes - 1958
 rr     = c(0,round(max(mTimes)))       #  the range of observations times
 knots  = seq(rr[1],rr[2],2/52)  #  knots at 52 equally spaced values
 norder = 3                      #  the order of the B-spline basis functions,
                                 #  in this case piece-wise quadratic
-nbasis = length(knots) + norder - 2 #  the number of basis functions
+nbasis = length(knots)+norder-2 #  the number of basis functions
 
 #  set up the basis object
 
@@ -62,9 +61,11 @@ colnames(coefs0) <- colnames(coefs.d) <- c("S", "I")
 ## plotfit.fd(mData[,2],times0,DEfd0$fd)
 DEfd0 <- fd(coefs0,bbasis0, fdnames)
 DEfd.d <- fd(coefs.d,bbasis.d, fdnames)
+mLambda <- c(1,1)
 
 
-procTimes <- c(1, seq(1 + 1/52, 25 - 1/52, by = 2/52), 25)
+
+procTimes <- c(1, seq(1 + 1/52, 5 - 1/52, by = 2/52), 5)
 procB <- vector(,length(procTimes))
 for(i in 1:length(procTimes)){
     month <- round((procTimes[i] - floor(procTimes[i])) * 12)
@@ -76,26 +77,28 @@ for(i in 1:length(procTimes)){
 #  list object betamore is now passed into LS.setup, too, in order to make
 #  it available as a functional parameter defined by its three coefficients
 #  run LS.setup
-
-args <- commandArgs(TRUE)
-lambda1 <- 10^(as.numeric(args[1]) %/% 5) / 1000
-lambda2 <- 10^(as.numeric(args[1]) %% 5) / 1000
-
 initBeta <- rep(0, 8)
 initBeta[1:2] <- 0.5
-mPars <- c(mean(procB) / mean(mData.d[,2]), 0, 0)
-names(mPars) <- c("gamma", "pho0", "pho1")
+mPars <- mean(procB) / mean(mData.d[,2])
+names(mPars) <- c("gamma")
 mKappa <- rep(2e-3, 12)
 #mKappa[c(6,7,8)] <- 1e-3
 names(mKappa) <- c("k1", "k2", "k3","k4","k5","k6","k7","k8","k9","k10","k11", "k12")
+kappa <- mKappa
+pars <- mPars
 
+args <- commandArgs(TRUE)
+lambda1 <- 100^(as.numeric(args[1]) %/% 5) / 1000
+lambda2 <- 100^(as.numeric(args[1]) %% 5) / 1000
+## debugonce(Profile.LS.sparse)
+initBeta
+mPars
 
 coefsS <- init.unob.LS.tv.delay(mDTVSIRfn, mData.d, times.d, pars = mPars, kappa = mKappa, coefs = coefs.d, beta = initBeta, basisvals = bbasis.d, lambda = c(lambda1,lambda2), more = list(b = procB), in.meth='nlminb', control.out = list(method = "nnls", maxIter = 10, lambda.sparse = 0, echo = TRUE), delay = delay, basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 2, tau = list(seq(0,7/52, 1/52)), unob = 1)
+
 coefs.d[, 1] <- coefsS$coefficients
 
-
-
 ## debug(Profile.LS.tv)
-tv.fit <- Profile.LS.tv.delay(mDTVSIRtrfn, mData.d, times.d, pars = mPars, kappa = mKappa, coefs = coefs.d, beta = initBeta, basisvals = bbasis.d, lambda = c(lambda1,lambda2), more = list(b = procB), in.meth='nlminb', control.out = list(method = "nnls", maxIter = 10, lambda.sparse = 0, echo = TRUE), delay = delay, basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 2, tau = list(seq(0,6/52, 1/52)))
+tv.fit <- Profile.LS.tv.delay(mDTVSIRfn, mData.d, times.d, pars = mPars, kappa = mKappa, coefs = coefs.d, beta = initBeta, basisvals = bbasis.d, lambda = c(lambda1,lambda2), more = list(b = procB), in.meth='nlminb', control.out = list(method = "nnls", maxIter = 10, lambda.sparse = 0, echo = TRUE), delay = delay, basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 2, tau = list(seq(0,7/52, 1/52)))
 
-save(tv.fit, lambda1, lambda2, file = paste("mfit03-",lambda1,lambda2,".RData", sep=""))
+save(tv.fit, lambda1, lambda2, file = paste("tv-fit02",lambda1,lambda2,".RData", sep=""))
