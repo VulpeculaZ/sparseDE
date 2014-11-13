@@ -1,14 +1,14 @@
 library(reshape2)
 library(ggplot2)
+library(penalized)
+library(CollocInfer)
+library(limSolve)
 
 source("./R/tv-delay.R")
 source("./R/mDTVSIRfn.R")
 source("./R/sparse.R")
 source("./R/LS.sparse.R")
 
-library(penalized)
-library(CollocInfer)
-library(limSolve)
 
 
 ## Real data:
@@ -65,14 +65,118 @@ for(i in 1:5){
     pars[[i]] <- beta[[i]] <- kappa[[i]]  <- list()
     fconv[[i]] <- NA
     for(j in 1:5){
-        load(paste("tv-fit", 10^(i-1), 10^(j-1), ".RData", sep=""))
-        pars[[i]][[j]] <- tv.fit$res$pars
-        beta[[i]][[j]] <- tv.fit$res$beta
-        kappa[[i]][[j]] <- tv.fit$res$kappa
-        fconv[[i]][j] <- tv.fit$res$f
+        if(i == 2 && j == 2) {
+        }else{
+            load(paste("tv-fit", 100^(i-1)/1000, 100^(j-1)/1000, ".RData", sep=""))
+            pars[[i]][[j]] <- tv.fit$res$pars
+            beta[[i]][[j]] <- tv.fit$res$beta
+            kappa[[i]][[j]] <- tv.fit$res$kappa
+            fconv[[i]][j] <- tv.fit$res$f
+        }
     }
 }
 
+i <- 3
+j <- 1
+load(paste("tv-fit", 100^(i-1)/1000, 100^(j-1)/1000, ".RData", sep=""))
+
+DEfd.fit <- fd(tv.fit$res$coefs[,2, drop = FALSE],bbasis.d)
+pdf()
+plotfit.fd(mData.d[,2],times.d,DEfd.fit)
+dev.off()
+
+
+
+##################################################
+## Parse 25 measles nnls fitting results
+## 4 time varying coefficients
+## Simulation script: measles-scr02.R
+## Wed Oct  1 14:05:15 CDT 2014
+## Commit: a5dc7d8e4c6c888789639092779a19c1e00be85b
+##################################################
+
+pars <- list()
+beta <- list()
+kappa <- list()
+fconv <- list()
+
+for(i in 1:5){
+    beta[[i]] <- kappa[[i]]  <- list()
+    pars[[i]] <- 0
+    fconv[[i]] <- NA
+    for(j in 1:5){
+        if(i == 5 & j==5){}
+        else{
+            load(paste("tv-fit02", 100^(i-1)/1000, 100^(j-1)/1000, ".RData", sep=""))
+            pars[[i]][j] <- tv.fit$res$pars
+            beta[[i]][[j]] <- tv.fit$res$beta
+            kappa[[i]][[j]] <- tv.fit$res$kappa
+            fconv[[i]][j] <- tv.fit$res$f
+        }
+    }
+}
+
+##################################################
+## Keep!!!
+##################################################
+
+i <- 4
+j <- 1
+load(paste("tv-fit02", 100^(i-1)/1000, 100^(j-1)/1000, ".RData", sep=""))
+
+DEfd.fit <- fd(tv.fit$res$coefs[,2, drop = FALSE],bbasis.d)
+#pdf()
+plotfit.fd(mData.d[,2],times.d,DEfd.fit)
+#dev.off()
+
+
+
+##################################################
+## Parse 25 measles nnls fitting results
+## 4 time varying coefficients
+## Simulation script: measles-scr03.R
+## Tue Nov 11 16:24:08 CST 2014
+## Commit: 622a8e1561fb2295cc1e302105fa4f44fd67ebcc
+##################################################
+## Using data from 1948 to 1963
+## 12 time varying coefficients, uniform initial values
+## 7 possible lags of delay, 0.5 at first two.
+
+pars <- list()
+beta <- list()
+kappa <- list()
+fconv <- list()
+
+for(i in 1:5){
+    beta[[i]] <- kappa[[i]]  <- list()
+    pars[[i]] <- list()
+    fconv[[i]] <- NA
+    for(j in 1:5){
+            tryCatch(
+            {
+                load(paste("mfit03-", 10^(i-1)/1000, 10^(j-1)/1000, ".RData", sep=""))
+                pars[[i]][[j]] <- tv.fit$res$pars
+                beta[[i]][[j]] <- tv.fit$res$beta
+                kappa[[i]][[j]] <- tv.fit$res$kappa
+                fconv[[i]][j] <- tv.fit$res$f
+            },
+                error= function(cond){
+                    message(cond)
+                    message(paste("\n", "Error at i,j being", i, j))
+                    return(NA)
+                }
+                )
+    }
+}
+
+i <- 2
+j <- 2
+load(paste("mfit03-", 10^(i-1)/1000, 10^(j-1)/1000, ".RData", sep=""))
+
+
+i <- 4
+j <- 2
+load(paste("mfit03-", 10^(i-1)/1000, 10^(j-1)/1000, ".RData", sep=""))
 DEfd.fit <- fd(tv.fit$res$coefs[,2, drop = FALSE],bbasis.d)
 pdf()
 plotfit.fd(mData.d[,2],times.d,DEfd.fit)

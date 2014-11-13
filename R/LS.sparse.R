@@ -56,7 +56,7 @@ delay$d2fdc2.DDE <- function(coefs, bvals, pars, more){
         more)
     H2 = more$dfdx(more$qpts, devals, pars, more$more)
     weights = checkweights(more$weights, more$whichobs, H1[,
-        , 1, drop = TRUE])
+        , 1, drop = FALSE])
     ##################################################
     ## New for DDE:
     ##################################################
@@ -358,8 +358,8 @@ delay$d2fdc2.DDE <- function(coefs, bvals, pars, more){
     H1 = make.SSElik()$d2fdx2(ddevals, more$qpts, devals, pars,
         more)
     H2 = more$dfdx(more$qpts, devals, pars, more$more)
-    weights = checkweights(more$weights, more$whichobs, H1[,
-        , 1, drop = TRUE])
+    weights = matrix(checkweights(more$weights, more$whichobs, H1[,
+        , 1, drop = FALSE]) , ncol = dim(devals)[2])
     ##################################################
     ## New for DDE:
     ##################################################

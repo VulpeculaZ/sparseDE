@@ -31,12 +31,12 @@ for(i in 1:19){
 }
 
 cat("lasso and fused lasso")
-fdp <- sum(beta.hat[,-c(6)] != 0) / length(beta.hat[,-c(6)])
+fdp <- sum(beta.pen[,-c(6)] != 0) / length(beta.pen[,-c(6)])
 print(fdp)
-fnp <- sum(beta.hat[,c(6)] == 0) / length(beta.hat[,c(6)])
+fnp <- sum(beta.pen[,c(6)] == 0) / length(beta.pen[,c(6)])
 print(fnp)
 
-fdp <- sum((kappa.nnls[,-6] - kappa.nnls[,-1])[,-3] != 0 ) / length((kappa.nnls[,-12] - kappa.nnls[,-1])[,-9])
+fdp <- sum((kappa.pen[,-6] - kappa.pen[,-1])[,-3] != 0 ) / length((kappa.pen[,-12] - kappa.pen[,-1])[,-9])
 fdp
 fnp <- sum(kappa.pen[,3]-kappa.pen[,4] == 0) / dim(kappa.pen)[1]
 fnp
@@ -44,15 +44,15 @@ mean(gamma.nnls)
 
 library(reshape2)
 library(ggplot2)
-colnames(beta.hat) <- paste("beta", 1:6, sep = ".")
-beta.df <- melt(as.data.frame(beta.hat))
-pdf(file = "nnls-6d-6tv.pdf", width = 9,height = 5)
+colnames(beta.pen) <- paste("beta", 1:6, sep = ".")
+beta.df <- melt(as.data.frame(beta.pen))
+pdf(file = "lasso-6d-6tv.pdf", width = 9,height = 5)
 ggplot(beta.df ,aes(x = variable,y = value))  + geom_boxplot()
 dev.off()
 
 colnames(beta.hat) <- paste("beta", 1:6, sep = ".")
 beta.df <- melt(as.data.frame(kappa.hat))
-pdf(file = "nnls-6d-6tv-kappa.pdf", width = 9,height = 5)
+pdf(file = "lasso-6d-6tv-kappa.pdf", width = 9,height = 5)
 ggplot(beta.df ,aes(x = variable,y = value))  + geom_boxplot()
 dev.off()
 

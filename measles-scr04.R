@@ -31,7 +31,7 @@ bB <-  bDf[which(bDf$year <= 1962 & bDf$year >= 1948),3]
 
 
 for(i in 1:length(tmpMonth)){
-    mB[i] <- bDf[which(bDf$year == floor(mTimes[i]) & bDf$month == tmpMonth[i]),3 ] * 12 * 0.384 * (671 + 772) / 11410
+    mB[i] <- bDf[which(bDf$year == floor(mTimes[i]) & bDf$month == tmpMonth[i]),3 ] * 12 *
 }
 
 
@@ -81,7 +81,7 @@ for(i in 1:length(procTimes)){
     month <- round((procTimes[i] - floor(procTimes[i])) * 12)
     if(month == 0)
         month <- 1
-    procB[i] <- bDf[which(bDf$year == (floor(procTimes[i])+1958) & bDf$month == month),3 ] * 0.384 * 12
+    procB[i] <- bDf[which(bDf$year == (floor(procTimes[i])+1948) & bDf$month == month),3 ] * 12
 }
 
 #  list object betamore is now passed into LS.setup, too, in order to make
@@ -89,8 +89,8 @@ for(i in 1:length(procTimes)){
 #  run LS.setup
 
 args <- commandArgs(TRUE)
-lambda1 <- 10^(as.numeric(args[1]) %/% 5) / 1000
-lambda2 <- 10^(as.numeric(args[1]) %% 5) / 1000
+lambda1 <- 10^(as.numeric(args[1]) %/% 4) / 1000
+lambda2 <- 10^(as.numeric(args[1]) %% 4) / 1000
 
 initBeta <- rep(0, 7)
 initBeta[1:2] <- 0.5
@@ -109,4 +109,4 @@ coefs.d[, 1] <- coefsS$coefficients
 ## debug(Profile.LS.tv)
 tv.fit <- Profile.LS.tv.delay(mDTVSIRtrfn, mData.d, times.d, pars = mPars, kappa = mKappa, coefs = coefs.d, beta = initBeta, basisvals = bbasis.d, lambda = c(lambda1,lambda2), more = list(b = procB), in.meth='nlminb', control.out = list(method = "nnls", maxIter = 10, lambda.sparse = 0, echo = TRUE), delay = delay, basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 2, tau = list(seq(0,6/52, 1/52)))
 
-save(tv.fit, lambda1, lambda2, file = paste("mfit03-",lambda1,lambda2,".RData", sep=""))
+save(tv.fit, lambda1, lambda2, file = paste("mfit04-",lambda1,lambda2,".RData", sep=""))

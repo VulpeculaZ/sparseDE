@@ -11,10 +11,10 @@ nls.sparse <- function(pars, beta, active, basisvals, fdobj0, times, data, coefs
             linObj <- ProfileSSE.AllPar.sparse(pars = pars, beta = beta, times = times, data = data, coefs = coefs, lik = lik, proc = proc, in.meth = in.meth,control.in = control.in, basisvals = basisvals, fdobj0 = fdobj0)
             f.new <- linObj$f
             f.new <- sum(f.new^2)
-            ## if(control.out$echo == TRUE){
-            ## print(x = c(paste("Iter:", i, f.new)))
-            ##    cat(pars, beta, "\n")
-            ## }
+            if(control.out$echo == TRUE){
+                print(x = c(paste("Iter:", i, f.new)))
+                cat(pars, beta, "\n")
+            }
             if(i == 1){
                 break
             }else{
@@ -60,6 +60,16 @@ nls.sparse <- function(pars, beta, active, basisvals, fdobj0, times, data, coefs
             beta <- res$coefficients[(length(pars) + 1) : length(res$coefficients)]
         }
         if(control.out$method == "nnls"){
+            E <- t(c(rep(0, length(pars)), rep(1, length(beta))))
+            F <- 1
+            G <- diag(length(c(pars, beta)))
+            H <- rep(0, length(c(pars, beta)))
+            res <- lsei(A= cbind(Xdf, Zdf), B = y, E = E, F=F, G = G, H = H)
+            ## res <- nnls(A = cbind(Xdf, Zdf), b= y)
+            pars <- res$X[1:length(pars)]
+            beta <- res$X[(length(pars) + 1) : (length(pars) + length(beta))]
+        }
+        if(control.out$method == "nnls.old"){
             res <- nnls(A = cbind(Xdf, Zdf), b= y)
             pars <- res$x[1:length(pars)]
             beta <- res$x[(length(pars) + 1) : length(res$x)]

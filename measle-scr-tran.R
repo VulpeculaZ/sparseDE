@@ -40,6 +40,7 @@ nbasis.d = length(knots.d) + norder - 2
 bbasis.d <- create.bspline.basis(range=c(1,rr[2]), norder=norder, nbasis=nbasis.d, breaks=knots.d)
 
 
+
 ## Generating Data
 mData <- matrix(NA, length(mI),2)
 mData[,2] <- mI
