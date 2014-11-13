@@ -31,7 +31,7 @@ bB <-  bDf[which(bDf$year <= 1962 & bDf$year >= 1948),3]
 
 
 for(i in 1:length(tmpMonth)){
-    mB[i] <- bDf[which(bDf$year == floor(mTimes[i]) & bDf$month == tmpMonth[i]),3 ] * 12 *
+    mB[i] <- bDf[which(bDf$year == floor(mTimes[i]) & bDf$month == tmpMonth[i]),3 ] * 12
 }
 
 
