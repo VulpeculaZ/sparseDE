@@ -17,7 +17,7 @@ dev.off()
 
 pars.pen <- beta.pen <- kappa.pen <- c()
 beta.true <- rep(0, 6)
-beta.true[6] <- 1
+beta.true[5] <- 1
 pars.true <- 10
 kappa.true <- c(rep(0.005,3), rep(0.0025,3))
 
@@ -31,29 +31,30 @@ for(i in 1:19){
 }
 
 cat("lasso and fused lasso")
-fdp <- sum(beta.pen[,-c(6)] != 0) / length(beta.pen[,-c(6)])
+fdp <- sum(beta.pen[,-c(5)] != 0) / length(beta.pen[,-c(5)])
 print(fdp)
-fnp <- sum(beta.pen[,c(6)] == 0) / length(beta.pen[,c(6)])
+fnp <- sum(beta.pen[,c(5)] == 0) / length(beta.pen[,c(5)])
 print(fnp)
+colMeans(beta.pen)
 
-fdp <- sum((kappa.pen[,-6] - kappa.pen[,-1])[,-3] != 0 ) / length((kappa.pen[,-12] - kappa.pen[,-1])[,-9])
+fdp <- sum((kappa.pen[,-6] - kappa.pen[,-1])[,-3] != 0 ) / length((kappa.pen[,-6] - kappa.pen[,-1])[,-3])
 fdp
 fnp <- sum(kappa.pen[,3]-kappa.pen[,4] == 0) / dim(kappa.pen)[1]
 fnp
-mean(gamma.nnls)
+colMeans(kappa.pen)
 
 library(reshape2)
 library(ggplot2)
 colnames(beta.pen) <- paste("beta", 1:6, sep = ".")
 beta.df <- melt(as.data.frame(beta.pen))
-pdf(file = "lasso-6d-6tv.pdf", width = 9,height = 5)
+pdf(file = "lasso-6d-6tv-beta.pdf", width = 9,height = 5)
 ggplot(beta.df ,aes(x = variable,y = value))  + geom_boxplot()
 dev.off()
 
-colnames(beta.hat) <- paste("beta", 1:6, sep = ".")
-beta.df <- melt(as.data.frame(kappa.hat))
+colnames(beta.hat) <- paste("kappa", 1:6, sep = ".")
+kappa.df <- melt(as.data.frame(kappa.pen))
 pdf(file = "lasso-6d-6tv-kappa.pdf", width = 9,height = 5)
-ggplot(beta.df ,aes(x = variable,y = value))  + geom_boxplot()
+ggplot(kappa.df ,aes(x = variable,y = value))  + geom_boxplot()
 dev.off()
 
 ##################################################
@@ -66,7 +67,7 @@ dev.off()
 
 pars.hat <- beta.hat <- kappa.hat <- c()
 beta.true <- rep(0, 6)
-beta.true[6] <- 1
+beta.true[5] <- 1
 pars.true <- 10
 kappa.true <- c(rep(0.005,3), rep(0.0025,3))
 
@@ -74,29 +75,32 @@ for(i in 0:19){
     load(paste("nnls-6d-6tv-sd100-", i, ".RData", sep=""))
     for(j in 1:25){
         pars.hat <- c(pars.hat, nnls.res[[j]]$pars)
-        beta.hat <- rbind(beta.hat, nnls.res[[j]]$beta)
+        beta.hat <- rbind(beta.hat, nnls.res[[j]]$conv$pars.kappa.beta[dim(nnls.res[[j]]$conv$pars.kappa.beta)[1], 8:13]
+)
         kappa.hat <- rbind(kappa.hat, nnls.res[[j]]$kappa)
     }
 }
 
 cat("nnls")
-fdp <- sum(beta.hat[,-c(6)] != 0) / length(beta.hat[,-c(6)])
+fdp <- sum(beta.hat[,-c(5)] != 0) / length(beta.hat[,-c(6)])
 print(fdp)
-fnp <- sum(beta.hat[,c(6)] == 0) / length(beta.hat[,c(6)])
+fnp <- sum(beta.hat[,c(5)] == 0) / length(beta.hat[,c(6)])
 print(fnp)
+
+colMeans(kappa.hat)
 
 library(reshape2)
 library(ggplot2)
 colnames(beta.hat) <- paste("beta", 1:6, sep = ".")
 beta.df <- melt(as.data.frame(beta.hat))
-pdf(file = "nnls-6d-6tv.pdf", width = 9,height = 5)
+pdf(file = "nnls-6d-6tv-beta.pdf", width = 9,height = 5)
 ggplot(beta.df ,aes(x = variable,y = value))  + geom_boxplot()
 dev.off()
 
-colnames(beta.hat) <- paste("beta", 1:6, sep = ".")
-beta.df <- melt(as.data.frame(kappa.hat))
+colnames(kappa.hat) <- paste("kappa", 1:6, sep = ".")
+kappa.df <- melt(as.data.frame(kappa.hat))
 pdf(file = "nnls-6d-6tv-kappa.pdf", width = 9,height = 5)
-ggplot(beta.df ,aes(x = variable,y = value))  + geom_boxplot()
+ggplot(kappa.df, aes(x = variable,y = value))  + geom_boxplot()
 dev.off()
 
 ##################################################

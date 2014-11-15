@@ -1,12 +1,11 @@
 source("./R/timevar.R")
 source("./R/tv-delay.R")
-source("./R/mDTVSIRfn.R")
+source("./R/simDTVSIRfn.R")
 source("./R/sparse.R")
 source("./R/LS.sparse.R")
 
 library(penalized)
 library(CollocInfer)
-library(deSolve)
 library(nnls)
 
 args <- commandArgs(TRUE)
@@ -19,7 +18,7 @@ load(nnls.filename)
 load("data-tv-1d-sd100.RData")
 
 tau <- 8/52
-times <- seq(tau, 5, by = 1/52)
+times <- seq(-dtvSIR.pars["tau1"], 5, by = 1/52)
 times0 <- knots0 <- times[times >= 0.5]
 times.d <- knots.d <- times[times >= 1]
 norder = 3
@@ -33,9 +32,9 @@ fdnames=list(NULL,c('S', 'I'),NULL)
 bfdPar0 = fdPar(basis0,lambda=1,int2Lfd(1))
 bfdPar.d <- fdPar(basis.d,lambda=1,int2Lfd(1))
 
-xout0 <- data.res[[1]]$xout[times >= 0.5,]
-DEfd0 <- smooth.basis(knots0, xout0, bfdPar0,fdnames=fdnames)$fd
-coefs0 <- DEfd0$coefs
+## xout0 <- data.res[[1]]$xout[times >= 0.5,]
+## DEfd0 <- smooth.basis(knots0, xout0, bfdPar0,fdnames=fdnames)$fd
+## coefs0 <- DEfd0$coefs
 
 set.seed(42)
 sim.res <- list()
@@ -53,3 +52,10 @@ for(i in 1:length(nnls.res)){
     sim.res[[i]] <- res.tv.delay
     save(sim.res, file = res.filename)
 }
+
+
+## DEfd.fit <- fd(res.tv.delay$select$coefs.pen, basis.d)
+## DEfd.fit <- fd(nnls.res[[i]]$coefs, basis.d)
+## xout.d <- data.res[[dataRange[i]]]$xout[times >= 1,]
+## dsirData <- matrix(xout.d, ncol =2, dimnames = list(NULL,c("S", "I")))
+## plotfit.fd(dsirData,times.d,DEfd.fit)

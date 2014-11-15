@@ -157,12 +157,10 @@ sparse.tv.delay <- function(fn, data, times, pars, beta, kappa, coefs = NULL, ba
             betanames <- c(betanames,paste("beta",i,".",j, sep = ""))
         }
     }
-
     ## pars <- nnls.res$pars
     ## beta <- nnls.res$beta
     ## kappa <- nnls.res$kappa
     coefs <- nnls.res$coefs
-
     if (is.null(active)) {
         active = 1:length(c(pars,beta, kappa))
     }
@@ -176,10 +174,10 @@ sparse.tv.delay <- function(fn, data, times, pars, beta, kappa, coefs = NULL, ba
     attr(fdobj0, "class") <- "fd"
     attr(fdobj.d, "class") <- "fd"
 
-    profile.obj = LS.setup(pars = c(pars, kappa), coefs = coefs, fn = fn,
-    basisvals, lambda = lambda, fd.obj, more, data, weights,
-        times, quadrature, eps = 1e-06, posproc, poslik, discrete,
-        names, sparse, likfn = make.id(), likmore = NULL)
+    profile.obj <- LS.setup(pars = c(pars, kappa), coefs = coefs, fn = fn,
+                            basisvals, lambda = lambda, fd.obj, more, data, weights,
+                            times, quadrature, eps = 1e-06, posproc, poslik, discrete,
+                            names, sparse, likfn = make.id(), likmore = NULL)
     dims = dim(data)
     lik = profile.obj$lik
     proc = profile.obj$proc
@@ -254,15 +252,16 @@ sparse.tv.delay <- function(fn, data, times, pars, beta, kappa, coefs = NULL, ba
                 for(k in 1:maxInnerIter){
                     res.sparse1 <- penalized(response = y1, penalized = Zdf1, unpenalized = Xdf, lambda2 = lambda1[i], fusedl = TRUE, positive = TRUE, maxiter = 50, trace = FALSE)
                     res.sparse2 <- penalized(response = y2, penalized = Zdf2, unpenalized = Xdf, lambda1 = lambda2[j], positive = TRUE, maxiter = 50, trace = FALSE)
-                    if(sum((kappa.pen[[ij]] - res.sparse1@penalized)^2, (pars.pen[[ij]] - (res.sparse1@unpenalized + res.sparse2@unpenalized)/2)^2, (res.sparse1@unpenalized  - res.sparse2@unpenalized)^2, (beta.pen[[ij]] - res.sparse2@penalized)^2) < eps){
+                    ifelse(sum(res.sparse2@penalized) == 0, sumbeta <- 1, sumbeta <- sum(res.sparse2@penalized))
+                    if(sum((kappa.pen[[ij]] - res.sparse1@penalized)^2, (pars.pen[[ij]] - (res.sparse1@unpenalized + res.sparse2@unpenalized)/2)^2, (res.sparse1@unpenalized  - res.sparse2@unpenalized)^2, (beta.pen[[ij]] - res.sparse2@penalized / sumbeta)^2) < eps){
                         kappa.pen[[ij]] <- res.sparse1@penalized
                         pars.pen[[ij]] <- (res.sparse2@unpenalized + res.sparse1@unpenalized) / 2
-                        beta.pen[[ij]] <- res.sparse2@penalized
+                        beta.pen[[ij]] <- res.sparse2@penalized / sumbeta
                         break
                     }
                     kappa.pen[[ij]] <- res.sparse1@penalized
                     pars.pen[[ij]] <- (res.sparse2@unpenalized + res.sparse1@unpenalized) / 2
-                    beta.pen[[ij]] <- res.sparse2@penalized
+                    beta.pen[[ij]] <- res.sparse2@penalized / sumbeta
                     y1 <- y - Zdf2 %*% beta.pen[[ij]]
                     y2 <- y - Zdf1 %*% kappa.pen[[ij]]
                 }
