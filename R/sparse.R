@@ -247,7 +247,7 @@ inneropt.DDE <- function(data, times, pars, beta, coefs, lik, proc,
                            hs = Hessian, method = methodTO, control = control.in, times = times,
                            data = data, lik = lik, proc = proc, pars = pars,
                            basisvals = basisvals, fdobj0 = fdobj0, beta = beta)
-        ncoefs <- res$solution
+        ncoefs <- matrix(res$solution, ncol(lik$bvals), length(res$solution)/ncol(lik$bvals))
     }
     else {
         stop("Unknown optimizer specified")
