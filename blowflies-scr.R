@@ -5,6 +5,7 @@ library(penalized)
 library(CollocInfer)
 library(pomp)
 library(limSolve)
+library(MASS)
 
 ## Read data:
 blowfly.data <- '"day";"y";"set"
@@ -933,7 +934,7 @@ blowfly.pars
 dde.fit <- Profile.LS.sparse(blowfliesfn, blowfly.data.d, times.d, pars = blowfly.pars, beta = initBeta, coefs = coefs.d, basisvals = bbasis.d, lambda = lambda, in.meth='nlminb', delay = delay, basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 1, tau = list(15), control.out = list(method = "nnls", maxIter = 20, lambda.sparse = 0, echo = TRUE))
 
 DEfd.fit <- fd(dde.fit$res$coefs, bbasis.d)
-plotfit.fd(blowfly.data.d,times.d,DEfd.fit)
+plotfit.fd(blowfly.data.d, times.d, DEfd.fit)
 # save(dde.fit, lambda, file = paste("blowfly-fit",lambda,".RData", sep=""))
 
 dde.fit1 <- Profile.LS.sparse(blowfliesfn, blowfly.data.d, times.d, pars = dde.fit$res$pars, beta = initBeta, coefs = dde.fit$res$coefs, basisvals = bbasis.d, lambda = lambda, in.meth='nlminb', delay = delay, basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 1, tau = list(15), control.out = list(method = "nnls", maxIter = 20, lambda.sparse = 0, echo = TRUE))
@@ -958,5 +959,5 @@ dde.fit3 <- Profile.LS.sparse(blowfliesfn, blowfly.data.d, times.d, pars = dde.f
 
 DEfd.fit <- fd(dde.fit3$res$coefs, bbasis.d)
 pdf("blowfly-fit.pdf", width = 8, height = 5)
-plotfit.fd(blowfly.data.d,times.d,DEfd.fit, main = "Nicholson's Blowflies Model", xlab = "Days", ylab = "Adult Blowfly Counts")
+plotfit.fd(blowfly.data.d,times.d,DEfd.fit, main = "Nicholson's Blowfly Model", xlab = "Days", ylab = "Adult Blowfly Counts")
 dev.off()

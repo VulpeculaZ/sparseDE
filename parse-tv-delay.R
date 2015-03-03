@@ -31,9 +31,9 @@ for(i in 1:19){
 }
 
 cat("lasso and fused lasso")
-fdp <- sum(beta.pen[,-c(5)] != 0) / length(beta.pen[,-c(5)])
+fdp <- sum(beta.pen[,-c(6)] != 0) / length(beta.pen[,-c(5)])
 print(fdp)
-fnp <- sum(beta.pen[,c(5)] == 0) / length(beta.pen[,c(5)])
+fnp <- sum(beta.pen[,c(6)] == 0) / length(beta.pen[,c(5)])
 print(fnp)
 colMeans(beta.pen)
 
@@ -51,9 +51,12 @@ pdf(file = "lasso-6d-6tv-beta.pdf", width = 9,height = 5)
 ggplot(beta.df ,aes(x = variable,y = value))  + geom_boxplot()
 dev.off()
 
-colnames(beta.hat) <- paste("kappa", 1:6, sep = ".")
+
+
+colnames(kappa.pen) <- paste("kappa", 1:6, sep = ".")
 kappa.df <- melt(as.data.frame(kappa.pen))
-pdf(file = "lasso-6d-6tv-kappa.pdf", width = 9,height = 5)
+kappa.df$value[kappa.df$value > 0.02 | kappa.df$value < 0.001]  <- NA
+pdf(file = "lasso-6d-6tv-kappa4.pdf", width = 9,height = 5)
 ggplot(kappa.df ,aes(x = variable,y = value))  + geom_boxplot()
 dev.off()
 
@@ -82,10 +85,17 @@ for(i in 0:19){
 }
 
 cat("nnls")
-fdp <- sum(beta.hat[,-c(5)] != 0) / length(beta.hat[,-c(6)])
+fdp <- sum(beta.hat[,-c(6)] != 0) / length(beta.hat[,-c(6)])
 print(fdp)
-fnp <- sum(beta.hat[,c(5)] == 0) / length(beta.hat[,c(6)])
+fnp <- sum(beta.hat[,c(6)] == 0) / length(beta.hat[,c(6)])
 print(fnp)
+colMeans(beta.hat)
+
+
+fdp <- sum((kappa.hat[,-6] - kappa.hat[,-1])[,-3] != 0 ) / length((kappa.hat[,-6] - kappa.hat[,-1])[,-3])
+fdp
+fnp <- sum(kappa.hat[,3]-kappa.hat[,4] == 0) / dim(kappa.hat)[1]
+fnp
 
 colMeans(kappa.hat)
 

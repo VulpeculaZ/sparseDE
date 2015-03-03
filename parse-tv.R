@@ -65,6 +65,7 @@ for(i in 1:length(tv.nnls)){
 }
 
 mean(gamma.nnls)
+sd(gamma.nnls)
 library(reshape2)
 library(ggplot2)
 colnames(kappa.nnls) <- paste("k", c(1:12), sep="")
@@ -166,6 +167,7 @@ for(i in 1:length(tv.fused1)){
 fdp <- sum((kappa.fused1[,-12] - kappa.fused1[,-1])[,-9] != 0 ) / length((kappa.fused1[,-12] - kappa.fused1[,-1])[,-9])
 fnp <- sum(kappa.fused1[,9]-kappa.fused1[,10] == 0) / dim(kappa.fused1)[1]
 mean(gamma.fused1)
+sd(gamma.fused1)
 
 library(reshape2)
 library(ggplot2)
@@ -201,6 +203,7 @@ fdp
 fnp <- sum(kappa.nnls[,9]-kappa.nnls[,10] == 0) / dim(kappa.nnls)[1]
 fnp
 mean(gamma.nnls)
+sd(gamma.nnls)
 
 library(reshape2)
 library(ggplot2)
@@ -236,6 +239,7 @@ fdp
 fnp <- sum(kappa.nnls[,9]-kappa.nnls[,10] == 0) / dim(kappa.nnls)[1]
 fnp
 mean(gamma.nnls)
+sd(gamma.nnls)
 
 library(reshape2)
 library(ggplot2)
@@ -270,6 +274,7 @@ for(i in 1:length(tv.fused1)){
 fdp <- sum((kappa.fused1[,-12] - kappa.fused1[,-1])[,-9] != 0 ) / length((kappa.fused1[,-12] - kappa.fused1[,-1])[,-9])
 fnp <- sum(kappa.fused1[,9]-kappa.fused1[,10] == 0) / dim(kappa.fused1)[1]
 mean(gamma.fused1)
+sd(gamma.fused1)
 
 library(reshape2)
 library(ggplot2)

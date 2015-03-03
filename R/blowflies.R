@@ -18,7 +18,7 @@ blowfliesfn$dfdx.d <- function(t, y, p, more){
     r <- array(0, c(length(t), ncol(y), ncol(y)))
     dimnames(r) = list(NULL, colnames(y), colnames(y))
     y.d <- more$y.d[,1]
-    r[,"y", "y"] <- p["c"] * (1 - y.d / p ["N0"]) * exp(-y.d / p["N0"])
+    r[,"y", "y"] <- p["c"] * (1 - y.d / p["N0"]) * exp(-y.d / p["N0"])
     return(r)
 }
 

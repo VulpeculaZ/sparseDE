@@ -1,5 +1,5 @@
 source("./R/tv-delay.R")
-source("./R/simDTVSIRfn.R")
+source("./R/mDTVSIRfn.R")
 source("./R/sparse.R")
 source("./R/LS.sparse.R")
 library(CollocInfer)
@@ -57,3 +57,4 @@ for(i in 1:length(dataRange)){
 runTime <- Sys.time() - begTime
 print(runTime)
 save(nnls.res,  runTime, file = filename)
+

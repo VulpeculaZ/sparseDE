@@ -18,7 +18,7 @@ nls.sparse <- function(pars, beta, active, basisvals, fdobj0, times, data, coefs
             if(i == 1){
                 break
             }else{
-                if(f.conv[i - 1] - f.new > 0 & f.conv[i - 1] - f.new < control.out$tol){
+                if(f.conv[i - 1] - f.new >= 0 & f.conv[i - 1] - f.new < control.out$tol){
                     return(list(pars=pars, beta = beta, coefs = coefs, f = f.new, y = y, Xdf = Xdf, Zdf = Zdf, conv = list(f = f.conv, pars.beta=pars.beta, conv.message = "Converged.")))
                 }
                 if(f.conv[i - 1] - f.new > 0){
@@ -39,11 +39,6 @@ nls.sparse <- function(pars, beta, active, basisvals, fdobj0, times, data, coefs
         Zdf <- - linObj$df[, (length(pars) + 1): dim(linObj$df)[2]]
         y <- - linObj$df %*% c(pars, beta) + linObj$f
         coefs <- linObj$coefs
-        if(control.out$method == "twoStage"){
-            res <- twoStgEst(Z = Zdf, y = y, X = Xdf, delta = delta, n_lambda = 1, lambda0 = lambda.sparse)
-            pars <- res$betamcp
-            beta <- res$thetamcp
-        }
         if(control.out$method == "penalized"){
             res <- penalized(response = y, penalized = Zdf, unpenalized = Xdf, lambda1 = lambda.sparse, positive = TRUE, trace = FALSE)
             pars <- res@unpenalized
@@ -94,7 +89,7 @@ nls.sparse <- function(pars, beta, active, basisvals, fdobj0, times, data, coefs
 ##' @param basis
 ##' @return
 ##' @author Ziqian Zhou
-delay.fit.sparse <- function(fd0, fd.d, times, tau, beta, ndelay, basis = NULL, lik = FALSE){
+delay.fit.sparse <- function(fd0, fd.d, times, tau, beta, ndelay, basis = NULL, lik = FALSE, in.meth = "nlminb"){
     basisvals0 <- fd0$basis
     basisvals.d <- fd.d$basis
     start.d <- fd.d$basis$rangeval[1]
@@ -132,9 +127,14 @@ delay.fit.sparse <- function(fd0, fd.d, times, tau, beta, ndelay, basis = NULL, 
                     bvals <- rbind(matrix(0, nrow = length(times) - dim(bvals)[1], ncol = dim(bvals)[2]), bvals)
                 }
                 y.d.list[[i]] <- y.d[,idelay]
-                bvals.d.list[[i]] <- bvals
+                if(in.meth == "trustOptim"){
+                    bvals.d.list[[i]] <- as(bvals, "CsparseMatrix")
+                }
+                else{
+                    bvals.d.list[[i]] <- bvals
+                }
                 y.d.beta[,j] <- y.d.beta[,j] + beta[i] * y.d[,idelay]
-                if(j == 1){
+                if(i == 1){
                     bvals.d[[j]] <- bvals.d.list[[i]] * beta[i]
                 }
                 else{
@@ -157,7 +157,7 @@ delay.fit.sparse <- function(fd0, fd.d, times, tau, beta, ndelay, basis = NULL, 
                 }
                 y.d.list[[i]] <- y.d[,idelay]
                 y.d.beta[,j] <- y.d.beta[,j] + beta[i] * y.d[,idelay]
-                if(j == 1){
+                if(i == 1){
                     bvals.d[[j]] <- bvals.d.list[[i]] * beta[i]
                 }
                 else{
@@ -177,9 +177,11 @@ inneropt.DDE <- function(data, times, pars, beta, coefs, lik, proc,
 {
     check.lik.proc.data.coefs(lik, proc, data, times, coefs)
     if (in.meth == "optim") {
-        if (is.null(control.in$trace)) {
+
+        if(is.null(control.in$trace)){
             control.in$trace = 0
         }
+
         if (is.null(control.in$maxit)) {
             control.in$maxit = 1000
         }
@@ -189,16 +191,19 @@ inneropt.DDE <- function(data, times, pars, beta, coefs, lik, proc,
         if (is.null(control.in$meth)) {
             control.in$meth = "BFGS"
         }
-        if (is.null(control.in$reportHessian)){
+        if(is.null(control.in$reportHessian)){
             control.in$reportHessian = TRUE
         }
         imeth = control.in$meth
         control.in$meth = NULL
-        res = optim(coefs, SplineCoefsErr.DDE, gr = SplineCoefsDC.DDE,
+
+        res <- optim(coefs, SplineCoefsErr.DDE, gr = SplineCoefsDC.DDE,
         hessian = control.in$reportHessian, control = control.in,
         times = times, data = data, lik = lik, proc = proc, pars = pars,
         beta = beta, method = imeth, basisvals = basisvals, fdobj0 = fdobj0)
+
         ncoefs = matrix(res$par, ncol(lik$bvals), length(res$par)/ncol(lik$bvals))
+
     }
     else if (in.meth == "nlminb") {
         if (is.null(control.in$trace)) {
@@ -221,15 +226,33 @@ inneropt.DDE <- function(data, times, pars, beta, coefs, lik, proc,
         }
         ## SplineCoefsErr do not need to be changed.
         ##
+
         res <- nlminb(coefs, SplineCoefsErr.DDE, gradient = SplineCoefsDC.DDE,
                       hessian = Hessian, control = control.in, times = times,
                       data = data, lik = lik, proc = proc, pars = pars,
                       basisvals = basisvals, fdobj0 = fdobj0, beta = beta)
+
         ncoefs = matrix(res$par, ncol(lik$bvals), length(res$par)/ncol(lik$bvals))
+    }
+    else if(in.meth == "trustOptim"){
+        if(is.null(control.in$useHessian)){
+            Hessian <- SplineCoefsDC2.DDE.sparse
+            methodTO <- "Sparse"
+        }
+        if(is.null(control.in$report.level)){
+            control.in$report.level <- -1L
+        }
+
+        res <- trust.optim(x = coefs, fn = SplineCoefsErr.DDE, gr = SplineCoefsDC.DDE,
+                           hs = Hessian, method = methodTO, control = control.in, times = times,
+                           data = data, lik = lik, proc = proc, pars = pars,
+                           basisvals = basisvals, fdobj0 = fdobj0, beta = beta)
+        ncoefs <- res$solution
     }
     else {
         stop("Unknown optimizer specified")
     }
+
     if (!is.null(proc$more$names)) {
         colnames(ncoefs) = proc$more$names
     }
@@ -274,8 +297,8 @@ Profile.LS.sparse <- function(fn, data, times, pars, beta, coefs = NULL, basisva
     ##################################################
     ## Added delay data and functions
     ##################################################
-    delayProcObj <- delay.fit.sparse(fd0 = fdobj0, fd.d = fdobj.d, times = proc$more$qpts, tau = tau, beta= beta, ndelay = ndelay)
-    delayLikObj <- delay.fit.sparse(fd0 = fdobj0, fd.d = fdobj.d, times = times,tau = tau, beta= beta, ndelay = ndelay)
+    delayProcObj <- delay.fit.sparse(fd0 = fdobj0, fd.d = fdobj.d, times = proc$more$qpts, tau = tau, beta= beta, ndelay = ndelay, in.meth = in.meth)
+    delayLikObj <- delay.fit.sparse(fd0 = fdobj0, fd.d = fdobj.d, times = times,tau = tau, beta= beta, ndelay = ndelay, in.meth = in.meth)
     lik$more$more$y.d <- delayLikObj$y.d
     proc$more$more$y.d <- delayProcObj$y.d
     lik$more$more$bvals.d <- delayLikObj$bvals.d
@@ -340,8 +363,8 @@ ProfileSSE.AllPar.sparse <- function(pars, beta, times, data, coefs, lik, proc,
     ##################################################
     ## Added delay data and functions
     ##################################################
-    delayProcObj <- delay.fit.sparse(fd0 = fdobj0, fd.d = fdobj.d, times = proc$more$qpts, tau = proc$more$more$tau, beta= beta, ndelay = proc$more$more$ndelay )
-    delayLikObj <- delay.fit.sparse(fd0 = fdobj0, fd.d = fdobj.d, times = times,tau = lik$more$more$tau, beta= beta, ndelay = lik$more$more$ndelay)
+    delayProcObj <- delay.fit.sparse(fd0 = fdobj0, fd.d = fdobj.d, times = proc$more$qpts, tau = proc$more$more$tau, beta= beta, ndelay = proc$more$more$ndelay, in.meth = in.meth)
+    delayLikObj <- delay.fit.sparse(fd0 = fdobj0, fd.d = fdobj.d, times = times,tau = lik$more$more$tau, beta= beta, ndelay = lik$more$more$ndelay, in.meth = in.meth)
     lik$more$more$y.d <- delayLikObj$y.d
     proc$more$more$y.d <- delayProcObj$y.d
     lik$more$more$bvals.d <- delayLikObj$bvals.d
@@ -404,13 +427,12 @@ SplineCoefsDC.DDE <- function(coefs, times, data, lik, proc, pars, beta, sgn = 1
     fdnames[[2]] <- attr(coefs2, "dimnames")[[2]]
     fdobj.d <- list(coefs = coefs2, basis = basisvals, fdnames =fdnames)
     attr(fdobj.d, "class") <- "fd"
-    delayProcObj <- delay.fit.sparse(fd0 = fdobj0, fd.d = fdobj.d, times = proc$more$qpts, tau = proc$more$more$tau, beta = beta, ndelay = proc$more$more$ndelay )
-    delayLikObj <- delay.fit.sparse(fd0 = fdobj0, fd.d = fdobj.d, times = times,tau = lik$more$more$tau, beta= beta, ndelay = lik$more$more$ndelay)
+    delayProcObj <- delay.fit.sparse(fd0 = fdobj0, fd.d = fdobj.d, times = proc$more$qpts, tau = proc$more$more$tau, beta = beta, ndelay = proc$more$more$ndelay, basis = proc$more$more$bvals.d.list)
+    delayLikObj <- delay.fit.sparse(fd0 = fdobj0, fd.d = fdobj.d, times = times,tau = lik$more$more$tau, beta= beta, ndelay = lik$more$more$ndelay, basis = lik$more$more$bvals.d.list)
     lik$more$more$y.d <- delayLikObj$y.d
     proc$more$more$y.d <- delayProcObj$y.d
     lik$more$more$bvals.d <- delayLikObj$bvals.d
     proc$more$more$bvals.d <- delayProcObj$bvals.d
-    proc$more$more$bvals.d.list <- delayProcObj$bvals.d.list
     proc$more$more$y.d.list <- delayProcObj$y.d.list
     devals = as.matrix(lik$bvals %*% coefs2)
     colnames(devals) = proc$more$names
@@ -427,8 +449,8 @@ SplineCoefsDC2.DDE <- function(coefs, times, data, lik, proc, pars, beta, sgn = 
     fdnames[[2]] <- attr(coefs2, "dimnames")[[2]]
     fdobj.d <- list(coefs = coefs2, basis = basisvals, fdnames =fdnames)
     attr(fdobj.d, "class") <- "fd"
-    delayProcObj <- delay.fit.sparse(fd0 = fdobj0, fd.d = fdobj.d, times = proc$more$qpts, tau = proc$more$more$tau, beta = beta, ndelay = proc$more$more$ndelay )
-    delayLikObj <- delay.fit.sparse(fd0 = fdobj0, fd.d = fdobj.d, times = times,tau = lik$more$more$tau, beta= beta, ndelay = lik$more$more$ndelay)
+    delayProcObj <- delay.fit.sparse(fd0 = fdobj0, fd.d = fdobj.d, times = proc$more$qpts, tau = proc$more$more$tau, beta = beta, ndelay = proc$more$more$ndelay, basis = proc$more$more$bvals.d.list)
+    delayLikObj <- delay.fit.sparse(fd0 = fdobj0, fd.d = fdobj.d, times = times,tau = lik$more$more$tau, beta= beta, ndelay = lik$more$more$ndelay, basis = lik$more$more$bvals.d.list)
     lik$more$more$y.d <- delayLikObj$y.d
     proc$more$more$y.d <- delayProcObj$y.d
     lik$more$more$bvals.d <- delayLikObj$bvals.d
@@ -439,19 +461,35 @@ SplineCoefsDC2.DDE <- function(coefs, times, data, lik, proc, pars, beta, sgn = 
     return(result)
 }
 
+SplineCoefsDC2.DDE.sparse <- function(coefs, times, data, lik, proc, pars, beta, sgn = 1, basisvals, fdobj0){
+    fdnames <- list(NULL, NULL, NULL)
+    coefs2 = matrix(coefs, ncol(lik$bvals), length(coefs)/ncol(lik$bvals))
+    fdnames[[2]] <- attr(coefs2, "dimnames")[[2]]
+    fdobj.d <- list(coefs = coefs2, basis = basisvals, fdnames =fdnames)
+    attr(fdobj.d, "class") <- "fd"
+    delayProcObj <- delay.fit.sparse(fd0 = fdobj0, fd.d = fdobj.d, times = proc$more$qpts, tau = proc$more$more$tau, beta = beta, ndelay = proc$more$more$ndelay, basis = proc$more$more$bvals.d.list)
+    delayLikObj <- delay.fit.sparse(fd0 = fdobj0, fd.d = fdobj.d, times = times,tau = lik$more$more$tau, beta= beta, ndelay = lik$more$more$ndelay, basis = lik$more$more$bvals.d.list)
+    lik$more$more$y.d <- delayLikObj$y.d
+    proc$more$more$y.d <- delayProcObj$y.d
+    lik$more$more$bvals.d <- delayLikObj$bvals.d
+    proc$more$more$bvals.d <- delayProcObj$bvals.d
+    proc$more$more$y.d.list <- delayProcObj$y.d.list
+    result <- as(SplineCoefsDC2sparse(coefs, times, data, lik, proc, pars, sgn), "dgCMatrix")
+    return(result)
+}
+
 SplineCoefsErr.DDE <- function(coefs, times, data, lik, proc, pars, beta, sgn = 1, basisvals, fdobj0){
     fdnames <- list(NULL, NULL, NULL)
     coefs2 = matrix(coefs, ncol(lik$bvals), length(coefs)/ncol(lik$bvals))
     fdnames[[2]] <- attr(coefs2, "dimnames")[[2]]
     fdobj.d <- list(coefs = coefs2, basis = basisvals, fdnames =fdnames)
     attr(fdobj.d, "class") <- "fd"
-    delayProcObj <- delay.fit.sparse(fd0 = fdobj0, fd.d = fdobj.d, times = proc$more$qpts, tau = proc$more$more$tau, beta = beta, ndelay = proc$more$more$ndelay)
-    delayLikObj <- delay.fit.sparse(fd0 = fdobj0, fd.d = fdobj.d, times = times,tau = lik$more$more$tau, beta= beta, ndelay = lik$more$more$ndelay, lik = TRUE)
+    delayProcObj <- delay.fit.sparse(fd0 = fdobj0, fd.d = fdobj.d, times = proc$more$qpts, tau = proc$more$more$tau, beta = beta, ndelay = proc$more$more$ndelay, ,basis = proc$more$more$bvals.d.list)
+    delayLikObj <- delay.fit.sparse(fd0 = fdobj0, fd.d = fdobj.d, times = times,tau = lik$more$more$tau, beta= beta, ndelay = lik$more$more$ndelay, basis = lik$more$more$bvals.d.list, lik = TRUE)
     lik$more$more$y.d <- delayLikObj$y.d
     proc$more$more$y.d <- delayProcObj$y.d
     ## lik$more$more$bvals.d <- delayLikObj$bvals.d
     proc$more$more$bvals.d <- delayProcObj$bvals.d
-    proc$more$more$bvals.d.list <- delayProcObj$bvals.d.list
     proc$more$more$y.d.list <- delayProcObj$y.d.list
     devals = as.matrix(lik$bvals %*% coefs2)
     colnames(devals) = proc$more$names

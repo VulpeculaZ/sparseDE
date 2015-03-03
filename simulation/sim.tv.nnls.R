@@ -21,6 +21,7 @@ kappa <- rep(0.005, 12)
 kappa[10:12] <- 0.002
 names(tvSIR.pars) <- c("gamma", "f")
 yout <- dede(y = yinit, times = times, func = tvSIR.gen, parms = tvSIR.pars, atol = 1e-10)
+
 ## matplot(yout[,1], yout[,-1], type = "l", lwd = 2, main = "Time Varying SIR Model")
 
 
@@ -40,8 +41,8 @@ sim.res <- list()
 for(i in 1:100){
     print(i)
     xout <- c()
-    xout <- cbind(xout, yout[,2] + rnorm(length(yout[,2]), sd = 50))
-    xout <- cbind(xout, yout[,3] + rnorm(length(yout[,2]), sd = 50))
+    xout <- cbind(xout, yout[,2] + rnorm(length(yout[,2]), sd = 200))
+    xout <- cbind(xout, yout[,3] + rnorm(length(yout[,2]), sd = 200))
     ## points(times, xout)
     DEfd <- smooth.basis(knots, xout, bfdPar,fdnames=fdnames)$fd
     ## temp.fit <- eval.fd(times.d, DEfd.d)
@@ -64,6 +65,12 @@ for(i in 1:100){
     tv.fit <- Profile.LS.tv(tvDSIRfn, tvData, times=times, pars = initPars, kappa = initKappa, coefs = coefs, basisvals = basis, lambda = 1000, in.meth='nlminb', control.out = list(method = "nnls", maxIter = 20, lambda.sparse = 0))
     sim.res[[i]] <- tv.fit
     save(sim.res, initPars, initKappa,  file ="sim.tv02.RData")
+    ##  pdf("tvsim.pdf",7, 4)
+    ## matplot(yout[,1], yout[,-1], type = "l", lwd = 2, main = "SIR Model with Time Varying Parameter",  xlab = "Time", ylab="Population Size")
+    ## points(times, tvData[,1])
+    ## points(times, tvData[,2], col = "red")
+    ## legend("topright", legend = c("S","I"), col=c(1,2), lty = c(1,2), lwd = c(2,2))
+    ## dev.off()
 }
 
 runTime <- Sys.time() - begTime
