@@ -20,7 +20,7 @@ set.seed(42)
 data.res <- list()
 for(i in 1:500){
     data.res[[i]] <- list()
-    blowfly.data <- yout[,2][55:405]   + rnorm(351, sd = 500)
+    blowfly.data <- yout[,2][55:405]   + rnorm(351, sd = 1000)
     initPars <- blowfly.pars[1:3] + c(runif(1, -4, 4), runif(1, -0.075, 0.075), runif(1, -200, 200))
     names(initPars) <- names(blowfly.pars)[1:3]
     data.res[[i]]$blowfly.data <- blowfly.data
@@ -30,4 +30,4 @@ for(i in 1:500){
 }
 
 curseed <- get(".Random.seed", .GlobalEnv)
-save(data.res, blowfly.pars, curseed, file = "data-blowfly-500.RData")
+save(data.res, blowfly.pars, curseed, file = "data-blowfly-1000.RData")

@@ -31,7 +31,7 @@ bfdPar0 = fdPar(bbasis0,lambda=1,int2Lfd(1))
 bfdPar.d <- fdPar(bbasis.d,lambda=1,int2Lfd(1))
 args <- commandArgs(TRUE)
 dataRange <- (1 + 25 * as.numeric(args[1])) : (25 * (as.numeric(args[1]) + 1))
-filename <- paste("blowfly-nnls-500-", as.numeric(args[1]),".RData", sep = "")
+filename <- paste("blowfly-nnls-1000-", as.numeric(args[1]),".RData", sep = "")
 
 
 begTime <- Sys.time()

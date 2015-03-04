@@ -294,3 +294,47 @@ ggplot(beta.df ,aes(x = variable,y = value))  + geom_boxplot()
 dev.off()
 rm(list = ls())
 
+
+##################################################
+## Parse 500 nnls fitting results of blowfly simulation, sd = 500
+## Simulation script:
+## blowfly-sim-batch.R
+## Commit: fbde97e6f63178e3fcabf5d8e50de64b1a2a2b0b
+## Tue Mar  3 21:24:36 CST 2015
+##################################################
+
+pars.hat <- beta.hat <- c()
+beta.true <- rep(0, 10)
+beta.true[6] <- 1
+pars.true <- c(150 / 8, 8 / 8 , 1000)
+Covar <- list()
+
+for(i in 0:19){
+    load(paste("blowfly-nnls-500-", i, ".RData", sep=""))
+    for(j in 1:25){
+        pars.hat <- rbind(pars.hat, nnls.res[[j]]$pars)
+        beta.hat <- rbind(beta.hat, nnls.res[[j]]$beta)
+        g <- cbind(nnls.res[[j]]$Xdf, nnls.res[[j]]$Zdf)
+        H <- t(g)%*%g
+        count <- c
+        Covar[[]] <- NeweyWest.Var( 0.5*(t(H)+H) ,g,5)
+
+    }
+}
+
+cat("nnls blowfly\n")
+fdp <- sum(beta.hat[,-6] != 0) / length(beta.hat[,-6])
+print(fdp)
+fnp <- sum(beta.hat[,6] == 0) / length(beta.hat[,-6])
+print(fnp)
+colMeans(beta.hat)
+colMeans(pars.hat)
+
+library(reshape2)
+library(ggplot2)
+colnames(beta.hat) <- paste("beta", 1:16, sep = ".")
+beta.df <- melt(as.data.frame(beta.hat))
+pdf(file = "pen-16d-adj-sd02.pdf", width = 9,height = 5)
+ggplot(beta.df ,aes(x = variable,y = value))  + geom_boxplot()
+dev.off()
+rm(list = ls())
