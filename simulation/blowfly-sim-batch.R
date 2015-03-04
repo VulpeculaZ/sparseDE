@@ -7,7 +7,7 @@ source("./R/LS.sparse.R")
 library(limSolve)
 ## detach("package:limSolve", unload = TRUE)
 
-load("data-blowfly-500.RData")
+load("data-blowfly-1000.RData")
 
 
 blowfly.day <- seq(0,175, 0.5)
