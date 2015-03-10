@@ -856,3 +856,4 @@ inneropt.DDE.unob <- function(data, times, pars, beta, coefs, lik, proc,
     }
     return(list(coefs = ncoefs, res = res))
 }
+
