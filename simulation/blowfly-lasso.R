@@ -4,6 +4,7 @@ source("./R/simDTVSIRfn.R")
 source("./R/sparse.R")
 source("./R/LS.sparse.R")
 source("./R/poslasso.R")
+source("./R/blowflies.R")
 
 
 library(penalized)
