@@ -7,7 +7,7 @@ source("./R/LS.sparse.R")
 library(limSolve)
 ## detach("package:limSolve", unload = TRUE)
 
-load("data-blowfly-1000.RData")
+load("data-blowfly-250.RData")
 
 
 blowfly.day <- seq(0,175, 0.5)
@@ -31,7 +31,8 @@ bfdPar0 = fdPar(bbasis0,lambda=1,int2Lfd(1))
 bfdPar.d <- fdPar(bbasis.d,lambda=1,int2Lfd(1))
 args <- commandArgs(TRUE)
 dataRange <- (1 + 25 * as.numeric(args[1])) : (25 * (as.numeric(args[1]) + 1))
-filename <- paste("blowfly-nnls-1000-", as.numeric(args[1]),".RData", sep = "")
+filename <- paste("blowfly-nnls-250-", as.numeric(args[1]),".RData", sep = "")
+tau <- list(seq(5.5,10,0.5))
 
 
 begTime <- Sys.time()
@@ -56,7 +57,6 @@ for(i in 1:length(dataRange)){
     lambda <- 1000
     initBeta <- data.res[[dataRange[i]]]$initBeta
     initPars <- data.res[[dataRange[i]]]$initPars
-    tau <- list(seq(5.5,10,0.5))
     dde.fit <- Profile.LS.sparse(blowfliesfn, blowfly.data.d, times.d, pars = initPars, beta = initBeta, coefs = coefs.d, basisvals = bbasis.d, lambda = lambda, in.meth='nlminb', delay = delay, basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 1, tau = tau, control.out = list(method = "nnls", maxIter = 50, lambda.sparse = 0, echo = TRUE))
     nnls.res[[i]] <- dde.fit$res
     save(nnls.res, file =filename)

@@ -315,20 +315,13 @@ for(i in 0:19){
     for(j in 1:25){
         pars.hat <- rbind(pars.hat, nnls.res[[j]]$pars)
         beta.hat <- rbind(beta.hat, nnls.res[[j]]$beta)
-        g <- cbind(nnls.res[[j]]$Xdf, nnls.res[[j]]$Zdf)
-        H <- t(g)%*%g
-        count <- c
-        Covar[[i*25 + j]] <- NeweyWest.Var( 0.5*(t(H)+H) ,g,10)
-        allpars <- c(pars.hat, beta.hat)
-        cover <- ((allpars + 1.96 * sqrt(diag(Covar[[i*25 + j]]))) >= c(pars.true, beta.true)) & ((allpars - 1.96 * sqrt(diag(Covar[[i*25 + j]]))) <= c(pars.true, beta.true))
-        coverage <- rbind(coverage, cover)
     }
 }
 
 cat("nnls blowfly\n")
 fdp <- sum(beta.hat[,-6] != 0) / length(beta.hat[,-6])
 print(fdp)
-fnp <- sum(beta.hat[,6] == 0) / length(beta.hat[,-6])
+fnp <- sum(beta.hat[,6] == 0) / length(beta.hat[,6])
 print(fnp)
 colMeans(beta.hat)
 colMeans(pars.hat)
@@ -337,13 +330,19 @@ library(reshape2)
 library(ggplot2)
 colnames(beta.hat) <- paste("beta", 1:10, sep = ".")
 beta.df <- melt(as.data.frame(beta.hat))
-pdf(file = "pen-16d-adj-sd02.pdf", width = 9,height = 5)
+pdf(file = "blowfly-500.pdf", width = 9,height = 5)
 ggplot(beta.df ,aes(x = variable,y = value))  + geom_boxplot()
 dev.off()
 rm(list = ls())
 
-load(paste("blowfly-nnls-500-1.RData", sep=""))
-load("data-blowfly-1000.RData")
+## Confidence interval estimation
+load("data-blowfly-500.RData")
+library(CollocInfer)
+library(MASS)
+source("./R/blowflies.R")
+source("./R/sparse.R")
+source("./R/LS.sparse.R")
+source("./R/tv-delay-cov.R")
 
 blowfly.day <- seq(0,175, 0.5)
 rr     = range(blowfly.day)       #  the range of observations times
@@ -364,13 +363,18 @@ bfdPar.d <- fdPar(bbasis.d,lambda=1,int2Lfd(1))
 fdnames=list(NULL,c('y'),NULL)
 lambda <- 1000
 tau <- list(seq(5.5,10,0.5))
+beta.true <- rep(0, 10)
+beta.true[6] <- 1
+pars.true <- c(150 / 8, 8 / 8 , 1000)
 
+Covar <- list()
+coverage <- c()
 
 for(i in 0:19){
     load(paste("blowfly-nnls-500-", i, ".RData", sep=""))
     for(j in 1:25){
-        pars.hat <- rbind(pars.hat, nnls.res[[j]]$pars)
-        beta.hat <- rbind(beta.hat, nnls.res[[j]]$beta)
+        pars.hat <- nnls.res[[j]]$pars
+        beta.hat <- nnls.res[[j]]$beta
         blowfly.data <- data.res[[i*25 + j]]$blowfly.data
         blowfly.data.d <- blowfly.data[times0 >= 20]
         blowfly.data <- matrix(blowfly.data, length(blowfly.data),1)
@@ -385,3 +389,163 @@ for(i in 0:19){
     }
 }
 
+save.image()
+       c        a       N0  beta1.1  beta1.2  beta1.3  beta1.4  beta1.5
+     452      409      389      499      499      500      500      499
+ beta1.6  beta1.7  beta1.8  beta1.9 beta1.10
+     496      497      500      500      500
+
+nnls.res.all <- list()
+for(i in 0:19){
+    load(paste("blowfly-nnls-500-", i, ".RData", sep=""))
+    for(j in 1:25){
+        nnls.res[[j]] <- c(nnls.res[[j]], blowfly.data = list(data.res[[i*25 + j]]$blowfly.data))
+    }
+    nnls.res.all <- c(nnls.res.all, nnls.res)
+}
+
+cov.one <- function(l){
+     pars.hat <- l$pars
+     beta.hat <- l$beta
+     blowfly.data <- l$blowfly.data
+     blowfly.data.d <- blowfly.data[times0 >= 20]
+     blowfly.data <- matrix(blowfly.data, length(blowfly.data),1)
+     blowfly.data.d <- matrix(blowfly.data.d, length(blowfly.data.d),1)
+     coefs <- l$coefs
+     DEfd0 <- smooth.basis(times0, blowfly.data,fdPar(bbasis0,1,0.1))
+     coefs0 <-  DEfd0$fd$coefs
+     Covar <- ProfileSSE.covariance.delay(pars = pars.hat, beta = beta.hat, active = NULL, fn = blowfliesfn, data = blowfly.data.d, times = times.d,  coefs = coefs, basisvals = bbasis.d, lambda = lambda, in.meth='nlminb', delay = delay, basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(beta.hat), ndelay = 1, tau = tau)
+     allpars <- c(pars.hat, beta.hat)
+     cover <- ((allpars + 1.96 * sqrt(diag(Covar))) >= c(pars.true, beta.true)) & ((allpars - 1.96 * sqrt(diag(Covar))) <= c(pars.true, beta.true))
+     return(list(Covar = Covar, coverage = cover))
+}
+tmp <- cov.one(nnls.res.all[[1]])
+library(parallel)
+system.time(mclapply(nnls.res.all[1:50], cov.one, mc.cores = 25))
+system.time(lapply(nnls.res.all[1:2], cov.one))
+cov.all <- mclapply(nnls.res.all[1:50], cov.one, mc.cores = 25)
+
+
+##################################################
+## LASSO and ad-lars
+##################################################
+
+pars.hat <- beta.hat <- c()
+beta.true <- rep(0, 10)
+beta.true[6] <- 1
+pars.true <- c(150 / 8, 8 / 8 , 1000)
+Covar <- list()
+coverage <- c()
+
+for(i in 0:19){
+    load(paste("blowfly-lasso-500-", i, ".RData", sep=""))
+    for(j in 1:25){
+        pars.hat <- rbind(pars.hat, sim.res.lars[[j]]$pars)
+        beta.hat <- rbind(beta.hat, sim.res.lars[[j]]$beta)
+    }
+}
+
+cat("nnls blowfly\n")
+fdp <- sum(beta.hat[,-6] != 0) / length(beta.hat[,-6])
+print(fdp)
+fnp <- sum(beta.hat[,6] == 0) / length(beta.hat[,6])
+print(fnp)
+colMeans(beta.hat)
+colMeans(pars.hat)
+
+library(reshape2)
+library(ggplot2)
+colnames(beta.hat) <- paste("beta", 1:10, sep = ".")
+beta.df <- melt(as.data.frame(beta.hat))
+pdf(file = "blowfly-500-lasso.pdf", width = 9,height = 5)
+ggplot(beta.df ,aes(x = variable,y = value))  + geom_boxplot()
+dev.off()
+rm(list = ls())
+
+##################################################
+## Parse 500 nnls fitting results of blowfly simulation, sd = 1000
+## Simulation script:
+## blowfly-sim-batch.R
+## Commit: 80de87543838ad14ab57b8db37d7a23f9756adf3
+## Sun Mar 15 20:01:49 CDT 2015
+##################################################
+
+pars.hat <- beta.hat <- c()
+beta.true <- rep(0, 10)
+beta.true[6] <- 1
+pars.true <- c(150 / 8, 8 / 8 , 1000)
+Covar <- list()
+coverage <- c()
+
+for(i in 0:19){
+    load(paste("blowfly-nnls-1000-", i, ".RData", sep=""))
+    print(length(nnls.res))
+    for(j in 1:length(nnls.res)){
+        pars.hat <- rbind(pars.hat, nnls.res[[j]]$pars)
+        beta.hat <- rbind(beta.hat, nnls.res[[j]]$beta)
+    }
+}
+
+cat("nnls blowfly\n")
+fdp <- sum(beta.hat[,-6] != 0) / length(beta.hat[,-6])
+print(fdp)
+fnp <- sum(beta.hat[,6] == 0) / length(beta.hat[,-6])
+print(fnp)
+colMeans(beta.hat)
+colMeans(pars.hat)
+
+library(reshape2)
+library(ggplot2)
+colnames(beta.hat) <- paste("beta", 1:10, sep = ".")
+beta.df <- melt(as.data.frame(beta.hat))
+ggplot(beta.df ,aes(x = variable,y = value))  + geom_boxplot()
+
+## Confidence interval estimation
+load("data-blowfly-1000.RData")
+library(CollocInfer)
+library(MASS)
+source("./R/blowflies.R")
+source("./R/sparse.R")
+source("./R/LS.sparse.R")
+source("./R/tv-delay-cov.R")
+
+blowfly.day <- seq(0,175, 0.5)
+rr     = range(blowfly.day)       #  the range of observations times
+knots  = seq(rr[1],rr[2],0.5)  #  knots at equally spaced values
+norder = 3                      #  the order of the B-spline basis functions,
+                                #  in this case piece-wise quadratic
+nbasis = length(knots)+norder-2 #  the number of basis functions
+
+#  set up the basis object
+bbasis0 <- create.bspline.basis(range=rr, norder=norder, nbasis=nbasis,breaks=knots)
+times0  <- blowfly.day
+times.d  <- blowfly.day[blowfly.day >= 20]
+knots.d <- seq(20,rr[2],0.5)
+nbasis.d <- length(knots.d) + norder - 2
+bbasis.d <- create.bspline.basis(range=c(20,rr[2]), norder=norder, nbasis=nbasis.d, breaks=knots.d)
+bfdPar0 = fdPar(bbasis0,lambda=1,int2Lfd(1))
+bfdPar.d <- fdPar(bbasis.d,lambda=1,int2Lfd(1))
+fdnames=list(NULL,c('y'),NULL)
+lambda <- 1000
+tau <- list(seq(5.5,10,0.5))
+beta.true <- rep(0, 10)
+beta.true[6] <- 1
+pars.true <- c(150 / 8, 8 / 8 , 1000)
+
+
+nnls.res.all <- list()
+for(i in 0:19){
+    load(paste("blowfly-nnls-1000-", i, ".RData", sep=""))
+    for(j in 1:length(nnls.res)){
+        nnls.res[[j]] <- c(nnls.res[[j]], blowfly.data = list(data.res[[i*25 + j]]$blowfly.data))
+    }
+    nnls.res.all <- c(nnls.res.all, nnls.res)
+}
+
+library(parallel)
+system.time(cov.all <- mclapply(nnls.res.all, cov.one, mc.cores = 30, mc.preschedule = FALSE))
+
+coverage <- c()
+for(i in 1:length(cov.all)){
+    try(coverage <- rbind(coverage, cov.all[[i]]$coverage))
+}
