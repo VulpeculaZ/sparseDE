@@ -2,6 +2,8 @@ source("./R/sparse.R")
 source("./R/LS.sparse.R")
 source("./R/DSIRfnSparse.R")
 library(CollocInfer)
+library(MASS)
+#library(limSolve)
 library(nnls)
 load("data-2dadj-sd02.RData")
 
@@ -48,7 +50,7 @@ for(i in 1:length(dataRange)){
     ## Setting initial values
     initPars <- data.res[[dataRange[i]]]$initPars
     initBeta <- data.res[[dataRange[i]]]$initBeta
-    dde.fit <- Profile.LS.sparse(DSIRfn.sparse, dsirData, times.d, pars = initPars, beta = initBeta, coefs = coefs.d, basisvals = basis.d, lambda = 1000, in.meth='nlminb', delay = delay, basisvals0 = basis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 2, tau = list(seq(0,5, length.out = 16)), control.out = list(method = "nnls", maxIter = 20, lambda.sparse = 0))
+    dde.fit <- Profile.LS.sparse(DSIRfn.sparse, dsirData, times.d, pars = initPars, beta = initBeta, coefs = coefs.d, basisvals = basis.d, lambda = 1000, in.meth='nlminb', delay = delay, basisvals0 = basis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 2, tau = list(seq(0,5, length.out = 16)), control.out = list(method = "nnls.old", maxIter = 20, lambda.sparse = 0, echo = TRUE))
     nnls.res[[i]] <- dde.fit$res
     save(nnls.res, DSIR.pars, file =filename)
 }
