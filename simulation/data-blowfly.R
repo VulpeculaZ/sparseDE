@@ -18,7 +18,7 @@ yout <- dede(y = 1000, times = times, func = blowfly.gen, parms = blowfly.pars, 
 
 set.seed(42)
 data.res <- list()
-for(i in 1:500){
+for(i in 1:5){
     data.res[[i]] <- list()
     blowfly.data <- yout[,2][55:405]   + rnorm(351, sd = 250)
     initPars <- blowfly.pars[1:3] + c(runif(1, -4, 4), runif(1, -0.075, 0.075), runif(1, -200, 200))

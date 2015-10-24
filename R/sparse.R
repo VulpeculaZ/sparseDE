@@ -857,3 +857,76 @@ inneropt.DDE.unob <- function(data, times, pars, beta, coefs, lik, proc,
     return(list(coefs = ncoefs, res = res))
 }
 
+
+ProfileDP.sparse <- function(fn, data, times, pars, beta, coefs = NULL, basisvals = NULL,
+    lambda, fd.obj = NULL, more = NULL, weights = NULL, quadrature = NULL,
+    in.meth = "nlminb", out.meth = "nls", control.in = list(),
+    control.out = list(), eps = 1e-06, active = NULL, posproc = FALSE,
+    poslik = FALSE, discrete = FALSE, names = NULL, sparse = FALSE,
+    likfn = make.id(), likmore = NULL, delay = NULL, tauMax = NULL,
+    basisvals0 = NULL, coefs0 = NULL, nbeta, ndelay, tau)
+{
+    if (is.null(active)) {
+        active = 1:length(pars)
+    }
+    betanames <- c()
+    for(i in 1:length(nbeta)){
+        for(j in 1:nbeta[i]){
+            betanames <- c(betanames,paste("beta",i,".",j, sep = ""))
+        }
+    }
+    ## Create y.d
+    fdnames <- list(NULL, NULL, NULL)
+    fdnames[[2]] <- attr(coefs, "dimnames")[[2]]
+    fdobj0 <- list(coefs = coefs0, basis = basisvals0, fdnames =fdnames)
+    fdobj.d <- list(coefs = coefs, basis = basisvals, fdnames =fdnames)
+    attr(fdobj0, "class") <- "fd"
+    attr(fdobj.d, "class") <- "fd"
+    profile.obj = LS.setup(pars = pars, coefs = coefs, fn = fn,
+    basisvals, lambda = lambda, fd.obj, more, data, weights,
+        times, quadrature, eps = 1e-06, posproc, poslik, discrete,
+        names, sparse, likfn = make.id(), likmore = NULL)
+    dims = dim(data)
+    lik = profile.obj$lik
+    proc = profile.obj$proc
+    coefs = profile.obj$coefs
+    data = profile.obj$data
+    times = profile.obj$times
+    proc$more$betanames <- betanames
+    ##################################################
+    ## Added delay data and functions
+    ##################################################
+    delayProcObj <- delay.fit.sparse(fd0 = fdobj0, fd.d = fdobj.d, times = proc$more$qpts, tau = tau, beta= beta, ndelay = ndelay, in.meth = in.meth)
+    delayLikObj <- delay.fit.sparse(fd0 = fdobj0, fd.d = fdobj.d, times = times,tau = tau, beta= beta, ndelay = ndelay, in.meth = in.meth)
+    lik$more$more$y.d <- delayLikObj$y.d
+    proc$more$more$y.d <- delayProcObj$y.d
+    lik$more$more$bvals.d <- delayLikObj$bvals.d
+    proc$more$more$bvals.d <- delayProcObj$bvals.d
+    proc$more$more$bvals.d.list <- delayProcObj$bvals.d.list
+    proc$more$more$y.d.list <- delayProcObj$y.d.list
+    proc$more$more$ndelay <- lik$more$more$ndelay <- ndelay
+    proc$more$more$nbeta <- lik$more$more$nbeta <- sapply(tau, length)
+    proc$more$more$tau <- lik$more$more$tau <- tau
+    proc$dfdc <- delay$dfdc
+    proc$d2fdc2 <- delay$d2fdc2.DDE
+    proc$d2fdcdp <- delay$d2fdcdp.sparse
+    proc$more$delay <- delay
+    proc$more$dfdtau <- dfdbeta.sparse
+    proc$more$d2fdxdtau <- d2fxdbeta.sparse
+    proc$more$d2fdx.ddtau <- d2fdx.ddbeta.sparse
+    ## Ires <- IresTmp
+
+    apars = pars[active]
+    aparamnames = names(apars)
+    if (is.null(control.out$maxIter)) {
+        control.out$maxIter = 100
+    }
+    if (is.null(control.out$tol)){
+        control.out$tol = 1e-08
+    }
+    control.in$iter.max = 1
+    res <- ProfileSSE.AllPar.sparse(pars = pars, beta = beta, times = times, data = data, coefs = coefs, lik = lik, proc = proc, in.meth = in.meth, control.in = control.in, basisvals = basisvals, fdobj0 = fdobj0)
+    Xdf <- - linObj$df[, 1:length(pars), drop = FALSE]
+    Zdf <- - linObj$df[, (length(pars) + 1): dim(linObj$df)[2]]
+    return(list(Xdf = Xdf, Zdf = Zdf))
+}

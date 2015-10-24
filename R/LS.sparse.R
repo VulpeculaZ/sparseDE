@@ -260,7 +260,7 @@ delay$d2fdx.ddtau2 <- function(data, times, devals, pars, more){
     weights = checkweights(more$weights, more$whichobs, difs)
     difs = weights * difs
     dfdx.d <- more$dfdx.d(times, devals, pars, more$more)[,,more$more$ndelay, drop = FALSE]
-    H = array(0, c(dim(devals),sum(more$more$nbeta)))
+    H = array(0, c(dim(devals), sum(more$more$nbeta)))
     beta.index <- 0
     delay.index <- 0
     for(i in more$more$ndelay){

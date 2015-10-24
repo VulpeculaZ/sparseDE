@@ -94,7 +94,7 @@ blowfly.pars
 tau <- list(c(0:15))
 
 
-system.time(dde.fit <- Profile.LS.sparse(blowfliesfn, blowfly.data.d, times.d, pars = blowfly.pars, beta = initBeta, coefs = coefs.d, basisvals = bbasis.d, lambda = lambda, in.meth='nlminb', delay = delay, basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 1, tau = tau, control.out = list(method = "nnls", maxIter = 20, lambda.sparse = 0, echo = TRUE)))
+dde.fit <- Profile.LS.sparse(blowfliesfn, blowfly.data.d, times.d, pars = blowfly.pars, beta = initBeta, coefs = coefs.d, basisvals = bbasis.d, lambda = lambda, in.meth='nlminb', delay = delay, basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 1, tau = tau, control.out = list(method = "nnls", maxIter = 20, lambda.sparse = 0, echo = TRUE))
 
 DEfd.fit <- fd(dde.fit$res$coefs, bbasis.d)
 pdf(file = "blowfly-sim-fit.pdf", width = 7, height = 5)
