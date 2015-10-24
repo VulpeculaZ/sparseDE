@@ -54,7 +54,7 @@ nls.sparse <- function(pars, beta, active, basisvals, fdobj0, times, data, coefs
             pars <- res$coefficients[1:length(pars)]
             beta <- res$coefficients[(length(pars) + 1) : length(res$coefficients)]
         }
-        if(control.out$method == "nnls"){
+        if(control.out$method == "nnls.eq"){
             E <- t(c(rep(0, length(pars)), rep(1, length(beta))))
             F <- 1
             G <- diag(length(c(pars, beta)))
@@ -63,6 +63,11 @@ nls.sparse <- function(pars, beta, active, basisvals, fdobj0, times, data, coefs
             ## res <- nnls(A = cbind(Xdf, Zdf), b= y)
             pars <- res$X[1:length(pars)]
             beta <- res$X[(length(pars) + 1) : (length(pars) + length(beta))]
+        }
+        if(control.out$method == "nnls.ineq"){
+            res <- nnls(A = cbind(Xdf, Zdf), B= y)
+            pars <- res$x[1:length(pars)]
+            beta <- res$x[(length(pars) + 1) : length(res$x)]
         }
         if(control.out$method == "nnls.old"){
             res <- nnls(A = cbind(Xdf, Zdf), b= y)
