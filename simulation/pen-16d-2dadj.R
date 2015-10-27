@@ -58,7 +58,8 @@ for(i in 1:length(dataRange)){
     ## Setting initial values
     dde.fit <- LS.sparse(DSIRfn.sparse, data = dsirData ,times.d, basisvals = basis.d, lambda = lambda, in.meth='nlminb', delay = delay, basisvals0 = basis0, coefs0 = coefs0, nbeta = 16, ndelay = 2, tau = list(seq(0,5, length.out = 16)), control.out = list(lambda.sparse = -3), nnls.res = nnls.res[[i]])
     dde.fit2 <- LS.sparse(DSIRfn.sparse, data = dsirData ,times.d, basisvals = basis.d, lambda = lambda, in.meth='nlminb', delay = delay, basisvals0 = basis0, coefs0 = coefs0, nbeta = 16, ndelay = 2, tau = list(seq(0,5, length.out = 16)), control.out = list(lambda.sparse = -4), nnls.res = nnls.res[[i]])
-    Covar <- ProfileSSE.covariance.delay(fn = DSIRfn.sparse, data = dsirData, times = times.d, pars = nnls.res[[i]]$pars, beta = nnls.res[[i]]$beta, active = NULL, coefs = nnls.res[[i]]$coefs, basisvals = basis.d, lambda = 1000, in.meth='nlminb', delay = delay, basisvals0 = basis0, coefs0 = coefs0, nbeta = length(nnls.res[[i]]$beta), ndelay = 2, tau = list(seq(0,5, length.out = 16)))
+    Covar <- NA
+    try(Covar <- ProfileSSE.covariance.delay(fn = DSIRfn.sparse, data = dsirData, times = times.d, pars = nnls.res[[i]]$pars, beta = nnls.res[[i]]$beta, active = NULL, coefs = nnls.res[[i]]$coefs, basisvals = basis.d, lambda = 1000, in.meth='nlminb', delay = delay, basisvals0 = basis0, coefs0 = coefs0, nbeta = length(nnls.res[[i]]$beta), ndelay = 2, tau = list(seq(0,5, length.out = 16))))
     sim.res.adlars[[i]] <- dde.fit$select
     sim.res.lars[[i]] <- dde.fit2$select
     sim.Covar[[i]] <- Covar

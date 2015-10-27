@@ -72,8 +72,8 @@ make.blowfly <- function(){
         fn = fn, dfdx = dfdx,
         dfdp = dfdp, d2fdx2 = d2fdx2,
         d2fdxdp = d2fdxdp, d2fdx.ddp = d2fdx.ddp,
-        dfdx.d = dfdx.d, d2fdx.ddx = d2fdx.ddx,
-        d2fdxdx.d = d2fdxdx.d, dfdx.d2 = dfdx.d2
+        dfdx.d = dfdx.d, d2fdx.ddx = d2fdxdx.d,
+        d2fdxdx.d = d2fdxdx.d, d2fdx.d2 = d2fdx.d2
         ))
 }
 
