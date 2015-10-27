@@ -5,6 +5,7 @@ source("./R/tv-delay-cov.R")
 
 library(CollocInfer)
 library(MASS)
+library(spam)
 #library(limSolve)
 library(nnls)
 load("data-2dadj-sd01.RData")
