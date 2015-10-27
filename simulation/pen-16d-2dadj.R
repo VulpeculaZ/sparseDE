@@ -6,6 +6,7 @@ source("./R/poslasso.R")
 source("./R/tv-delay-cov.R")
 library(CollocInfer)
 library(MASS)
+library(spam)
 library(nnls)
 load("data-2dadj-sd02.RData")
 
