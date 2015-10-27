@@ -204,7 +204,8 @@ colMeans(beta.hat)
 sum(colMeans(beta.hat))
 mean(pars.hat)
 sd(pars.hat)
-
+sd(beta.hat[,7])
+sd(beta.hat[,8])
 library(reshape2)
 library(ggplot2)
 colnames(beta.hat) <- paste("beta", 1:16, sep = ".")
@@ -213,62 +214,35 @@ pdf(file = "nnls-16d-adj-sd02.pdf", width = 9,height = 5)
 ggplot(beta.df ,aes(x = variable,y = value))  + geom_boxplot()
 dev.off()
 
-load("data-2dadj-sd02.RData")
-nnls.res.all <- list()
+
+## Covariance:
+Covar.mat <- c()
 for(i in 0:19){
-    load(paste("nnls-2dadj-sd02-", i, ".RData", sep=""))
+    load(paste("pen-2dadj-sd02-", i, ".RData", sep=""))
     for(j in 1:25){
-        nnls.res[[j]] <- c(nnls.res[[j]], nnls.data = list(data.res[[i*25 + j]]$blowfly.data))
+        if(!is.na(sim.Covar[[j]][1])){
+            Covar.mat <- rbind(Covar.mat, diag(sim.Covar[[j]]))
+        }else{
+            print(i * 20 + j)
+        }
     }
-    nnls.res.all <- c(nnls.res.all, nnls.res)
 }
 
-
-times <- seq(-DSIR.pars["tau2"], 25, by = 0.1)
-times0 <- knots0 <- times[times >= 0]
-times.d <- knots.d <- times[times >= 5]
-norder = 3
-nbasis.d = length(knots.d) + norder - 2
-nbasis0 <- length(knots0) + norder - 2
-range0  = range(knots0)
-range.d <- range(knots.d)
-basis0 <- create.bspline.basis(range=range(knots0), nbasis=nbasis0, norder=norder, breaks=knots0)
-basis.d <- create.bspline.basis(range=range.d, nbasis=nbasis.d, norder=norder, breaks=knots.d)
-fdnames=list(NULL,c('S', 'I'),NULL)
-bfdPar0 = fdPar(basis0,lambda=1,int2Lfd(1))
-bfdPar.d <- fdPar(basis.d,lambda=1,int2Lfd(1))
-
-Covar <- list()
-coverage <- c()
-
-
-cov.one <- function(l){
-     pars.hat <- l$pars
-     beta.hat <- l$beta
-     this.data <- l$nnls.data[times >=0]
-     this.data.d <- l$nnls.data[times >= 5]
-     coefs <- l$coefs
-     DEfd0 <- smooth.basis(knots0, this.data, bfdPar0,fdnames=fdnames)
-     coefs0 <-  DEfd0$fd$coefs
-     Covar <- ProfileSSE.covariance.delay(fn = DSIRfn.sparse, pars = pars.hat, beta = beta.hat, active = NULL, fn = , data = this.data.d, times = times.d,  coefs = coefs, basisvals = basis.d, lambda = 1000, in.meth='nlminb', delay = delay, basisvals0 = basis0, coefs0 = coefs0, nbeta = length(beta.hat), ndelay = 1, tau = list(seq(0,5, length.out = 16)))
-     allpars <- c(pars.hat, beta.hat)
-     cover <- ((allpars + 1.96 * sqrt(diag(Covar))) >= c(pars.true, beta.true)) & ((allpars - 1.96 * sqrt(diag(Covar))) <= c(pars.true, beta.true))
-     return(list(Covar = Covar, coverage = cover))
-}
-tmp <- cov.one(nnls.res.all[[1]])
-
-library(parallel)
-system.time(mclapply(nnls.res.all[1:50], cov.one, mc.cores = 25))
-system.time(lapply(nnls.res.all[1:2], cov.one))
-cov.all <- mclapply(nnls.res.all[1:50], cov.one, mc.cores = 25)
-
+## Coverage of 95% CI:
+pars.hat <- pars.hat[-c(68, 88)]
+beta.hat <- beta.hat[-c(68, 88),]
+cover.par <- ((pars.hat + 1.96 * sqrt(Covar.mat[,1])) >= 0.5) & ((pars.hat - 1.96 * sqrt(Covar.mat[,1])) <= 0.5)
+cover.beta7 <- ((beta.hat[,7] + 1.96 * sqrt(Covar.mat[,8])) >= 2) & ((beta.hat[,7] - 1.96 * sqrt(Covar.mat[,8])) <= 2)
+cover.beta8 <- ((beta.hat[,8] + 1.96 * sqrt(Covar.mat[,9])) >= 2) & ((beta.hat[,8] - 1.96 * sqrt(Covar.mat[,9])) <= 2)
+sum(cover.beta7) / 498
+sum(cover.beta8) / 498
 
 ##################################################
-## Parse 500 penalized fitting results of two adjecent delays, sd = 0.02
+## Parse 500 lasso fitting results of two adjecent delays, sd = 0.02
 ## Simulation script:
 ## pen-16d-2dadj.R
-## Commit: 45f5ae3a8567e5398b8b3048d85035d607b87460
-## Thu Apr 10 09:32:03 CDT 2014
+## Commit: 3b9fcac
+## Tue Oct 27 11:09:51 CDT 2015
 ##################################################
 
 pars.hat <- beta.hat <- c()
@@ -276,11 +250,12 @@ beta.true <- rep(0, 16)
 beta.true[c(7,8)] <- 2
 pars.true <- 0.5
 
+## Positive Lars:
 for(i in 0:19){
     load(paste("pen-2dadj-sd02-", i, ".RData", sep=""))
     for(j in 1:25){
-        pars.hat <- c(pars.hat, pen.res[[j]]$pars)
-        beta.hat <- rbind(beta.hat, pen.res[[j]]$beta)
+        pars.hat <- c(pars.hat, sim.res.lars[[j]]$pars)
+        beta.hat <- rbind(beta.hat, sim.res.lars[[j]]$beta)
     }
 }
 
@@ -298,17 +273,17 @@ library(reshape2)
 library(ggplot2)
 colnames(beta.hat) <- paste("beta", 1:16, sep = ".")
 beta.df <- melt(as.data.frame(beta.hat))
-pdf(file = "pen-16d-adj-sd02.pdf", width = 9,height = 5)
-ggplot(beta.df ,aes(x = variable,y = value))  + geom_boxplot()
+pdf(file = "pen-16d-adj-sd02.pdf", width = 9, height = 5)
+ggplot(beta.df, aes(x = variable,y = value))  + geom_boxplot()
 dev.off()
 rm(list = ls())
 
 ##################################################
 ## Parse 500 adaptive-lasso fitting results of two adjecent delays, sd = 0.02
 ## Simulation script:
-## al-16d-2dadj.R
-## Commit: 45f5ae3a8567e5398b8b3048d85035d607b87460
-## Thu Apr 10 09:32:03 CDT 2014
+## pen-16d-2dadj.R
+## Commit: 3b9fcac
+## Tue Oct 27 13:37:51 CDT 2015
 ##################################################
 
 pars.hat <- beta.hat <- c()
@@ -317,10 +292,10 @@ beta.true[c(7,8)] <- 2
 pars.true <- 0.5
 
 for(i in 0:19){
-    load(paste("al-2dadj-sd02-", i, ".RData", sep=""))
+    load(paste("pen-2dadj-sd02-", i, ".RData", sep=""))
     for(j in 1:25){
-        pars.hat <- c(pars.hat, al.res[[j]]$pars)
-        beta.hat <- rbind(beta.hat, al.res[[j]]$beta)
+        pars.hat <- c(pars.hat, sim.res.adlars[[j]]$pars)
+        beta.hat <- rbind(beta.hat, sim.res.adlars[[j]]$beta)
     }
 }
 
@@ -418,6 +393,7 @@ pars.true <- c(150 / 8, 8 / 8 , 1000)
 
 Covar <- list()
 coverage <- c()
+blowfliesfn <- make.blowfly()
 
 ## Do not run
 ## Takes a long time.
