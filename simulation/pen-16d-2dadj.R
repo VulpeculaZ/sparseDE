@@ -2,9 +2,11 @@ begTime <- Sys.time()
 source("./R/sparse.R")
 source("./R/LS.sparse.R")
 source("./R/DSIRfnSparse.R")
+source("./R/poslasso.R")
+source("./R/tv-delay-cov.R")
 library(CollocInfer)
+library(MASS)
 library(nnls)
-library(penalized)
 load("data-2dadj-sd02.RData")
 
 
@@ -21,6 +23,7 @@ basis.d <- create.bspline.basis(range=range.d, nbasis=nbasis.d, norder=norder, b
 fdnames=list(NULL,c('S', 'I'),NULL)
 bfdPar0 = fdPar(basis0,lambda=1,int2Lfd(1))
 bfdPar.d <- fdPar(basis.d,lambda=1,int2Lfd(1))
+
 args <- commandArgs(TRUE)
 dataRange <- (1 + 25 * as.numeric(args[1])) : (25 * (as.numeric(args[1]) + 1))
 nnlsname <- paste("nnls-2dadj-sd02-", as.numeric(args[1]),".RData", sep = "")
@@ -28,7 +31,9 @@ filename <- paste("pen-2dadj-sd02-", as.numeric(args[1]),".RData", sep = "")
 load(nnlsname)
 
 set.seed(42)
-pen.res <- list()
+sim.res.lars <- list()
+sim.res.adlars <- list()
+sim.Covar <- list()
 for(i in 1:length(dataRange)){
     print(dataRange[i])
     ## points(times, xout)
@@ -50,12 +55,16 @@ for(i in 1:length(dataRange)){
     ## Data
     dsirData <- matrix(xout.d, ncol =2, dimnames = list(NULL,c("S", "I")))
     ## Setting initial values
-    dde.fit <- LS.sparse(DSIRfn.sparse, data = dsirData ,times.d, basisvals = basis.d, lambda = lambda, in.meth='nlminb', delay = delay, basisvals0 = basis0, coefs0 = coefs0, nbeta = 16, ndelay = 2, tau = list(seq(0,5, length.out = 16)), control.out = list(lambda.sparse = -1, pars.c = 50), nnls.res = nnls.res[[i]])
-    pen.res[[i]] <- dde.fit$select
-    save(pen.res, file = filename)
+    dde.fit <- LS.sparse(DSIRfn.sparse, data = dsirData ,times.d, basisvals = basis.d, lambda = lambda, in.meth='nlminb', delay = delay, basisvals0 = basis0, coefs0 = coefs0, nbeta = 16, ndelay = 2, tau = list(seq(0,5, length.out = 16)), control.out = list(lambda.sparse = -3), nnls.res = nnls.res[[i]])
+    dde.fit2 <- LS.sparse(DSIRfn.sparse, data = dsirData ,times.d, basisvals = basis.d, lambda = lambda, in.meth='nlminb', delay = delay, basisvals0 = basis0, coefs0 = coefs0, nbeta = 16, ndelay = 2, tau = list(seq(0,5, length.out = 16)), control.out = list(lambda.sparse = -4), nnls.res = nnls.res[[i]])
+    Covar <- ProfileSSE.covariance.delay(fn = DSIRfn.sparse, data = dsirData, times = times.d, pars = nnls.res[[i]]$pars, beta = nnls.res[[i]]$beta, active = NULL, coefs = nnls.res[[i]]$coefs, basisvals = basis.d, lambda = 1000, in.meth='nlminb', delay = delay, basisvals0 = basis0, coefs0 = coefs0, nbeta = length(nnls.res[[i]]$beta), ndelay = 2, tau = list(seq(0,5, length.out = 16)))
+    sim.res.adlars[[i]] <- dde.fit$select
+    sim.res.lars[[i]] <- dde.fit2$select
+    sim.Covar[[i]] <- Covar
+    save(sim.res.adlars, sim.res.lars, sim.Covar, file = filename)
 }
 
 runTime <- Sys.time() - begTime
 scriptName <- "pen-16d-2dadj.R"
 print(runTime)
-save(pen.res, DSIR.pars, runTime, scriptName, file = filename)
+save(sim.res.adlars, sim.res.lars, sim.Covar, DSIR.pars, runTime, scriptName, file = filename)

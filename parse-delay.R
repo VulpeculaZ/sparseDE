@@ -178,8 +178,8 @@ dev.off()
 ## Parse 500 nnls fitting results of two adjecent delays, sd = 0.02
 ## Simulation script:
 ## nnls-16d-2dadj.R
-## Commit: 471e1186e954baed9300525f4de0a657bf994793
-## Thu Apr  3 10:59:04 CDT 2014
+## Commit: 9969ab5
+## Sun Oct 25 11:41:52 CDT 2015
 ##################################################
 
 pars.hat <- beta.hat <- c()
@@ -212,7 +212,56 @@ beta.df <- melt(as.data.frame(beta.hat))
 pdf(file = "nnls-16d-adj-sd02.pdf", width = 9,height = 5)
 ggplot(beta.df ,aes(x = variable,y = value))  + geom_boxplot()
 dev.off()
-rm(list = ls())
+
+load("data-2dadj-sd02.RData")
+nnls.res.all <- list()
+for(i in 0:19){
+    load(paste("nnls-2dadj-sd02-", i, ".RData", sep=""))
+    for(j in 1:25){
+        nnls.res[[j]] <- c(nnls.res[[j]], nnls.data = list(data.res[[i*25 + j]]$blowfly.data))
+    }
+    nnls.res.all <- c(nnls.res.all, nnls.res)
+}
+
+
+times <- seq(-DSIR.pars["tau2"], 25, by = 0.1)
+times0 <- knots0 <- times[times >= 0]
+times.d <- knots.d <- times[times >= 5]
+norder = 3
+nbasis.d = length(knots.d) + norder - 2
+nbasis0 <- length(knots0) + norder - 2
+range0  = range(knots0)
+range.d <- range(knots.d)
+basis0 <- create.bspline.basis(range=range(knots0), nbasis=nbasis0, norder=norder, breaks=knots0)
+basis.d <- create.bspline.basis(range=range.d, nbasis=nbasis.d, norder=norder, breaks=knots.d)
+fdnames=list(NULL,c('S', 'I'),NULL)
+bfdPar0 = fdPar(basis0,lambda=1,int2Lfd(1))
+bfdPar.d <- fdPar(basis.d,lambda=1,int2Lfd(1))
+
+Covar <- list()
+coverage <- c()
+
+
+cov.one <- function(l){
+     pars.hat <- l$pars
+     beta.hat <- l$beta
+     this.data <- l$nnls.data[times >=0]
+     this.data.d <- l$nnls.data[times >= 5]
+     coefs <- l$coefs
+     DEfd0 <- smooth.basis(knots0, this.data, bfdPar0,fdnames=fdnames)
+     coefs0 <-  DEfd0$fd$coefs
+     Covar <- ProfileSSE.covariance.delay(fn = DSIRfn.sparse, pars = pars.hat, beta = beta.hat, active = NULL, fn = , data = this.data.d, times = times.d,  coefs = coefs, basisvals = basis.d, lambda = 1000, in.meth='nlminb', delay = delay, basisvals0 = basis0, coefs0 = coefs0, nbeta = length(beta.hat), ndelay = 1, tau = list(seq(0,5, length.out = 16)))
+     allpars <- c(pars.hat, beta.hat)
+     cover <- ((allpars + 1.96 * sqrt(diag(Covar))) >= c(pars.true, beta.true)) & ((allpars - 1.96 * sqrt(diag(Covar))) <= c(pars.true, beta.true))
+     return(list(Covar = Covar, coverage = cover))
+}
+tmp <- cov.one(nnls.res.all[[1]])
+
+library(parallel)
+system.time(mclapply(nnls.res.all[1:50], cov.one, mc.cores = 25))
+system.time(lapply(nnls.res.all[1:2], cov.one))
+cov.all <- mclapply(nnls.res.all[1:50], cov.one, mc.cores = 25)
+
 
 ##################################################
 ## Parse 500 penalized fitting results of two adjecent delays, sd = 0.02
