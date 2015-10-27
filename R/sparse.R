@@ -863,7 +863,7 @@ inneropt.DDE.unob <- function(data, times, pars, beta, coefs, lik, proc,
 }
 
 
-ProfileDP.sparse <- function(fn, data, times, pars, beta, coefs = NULL, basisvals = NULL,
+ProfileDP.sparse <- function(pars, beta, fn, data, times, coefs = NULL, basisvals = NULL,
     lambda, fd.obj = NULL, more = NULL, weights = NULL, quadrature = NULL,
     in.meth = "nlminb", out.meth = "nls", control.in = list(),
     control.out = list(), eps = 1e-06, active = NULL, posproc = FALSE,
@@ -871,9 +871,7 @@ ProfileDP.sparse <- function(fn, data, times, pars, beta, coefs = NULL, basisval
     likfn = make.id(), likmore = NULL, delay = NULL, tauMax = NULL,
     basisvals0 = NULL, coefs0 = NULL, nbeta, ndelay, tau)
 {
-    if (is.null(active)) {
-        active = 1:length(pars)
-    }
+    allpars <- pars
     betanames <- c()
     for(i in 1:length(nbeta)){
         for(j in 1:nbeta[i]){
@@ -930,8 +928,9 @@ ProfileDP.sparse <- function(fn, data, times, pars, beta, coefs = NULL, basisval
         control.out$tol = 1e-08
     }
     control.in$iter.max = 1
-    res <- ProfileSSE.AllPar.sparse(pars = pars, beta = beta, times = times, data = data, coefs = coefs, lik = lik, proc = proc, in.meth = in.meth, control.in = control.in, basisvals = basisvals, fdobj0 = fdobj0)
-    Xdf <- - linObj$df[, 1:length(pars), drop = FALSE]
-    Zdf <- - linObj$df[, (length(pars) + 1): dim(linObj$df)[2]]
+
+    res <- ProfileDP.AllPar.sparse(pars = pars, beta = beta, times = times, data = data, coefs = coefs, lik = lik, proc = proc, in.meth = in.meth, control.in = control.in, basisvals = basisvals, fdobj0 = fdobj0)
+    Xdf <- -res$Xdf
+    Zdf <- -res$Zdf
     return(list(Xdf = Xdf, Zdf = Zdf))
 }
