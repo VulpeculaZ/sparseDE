@@ -17,7 +17,7 @@ mDTVSIRfn$fn <- function (t, y, p, more)
     r = y
     yi.d <- more$y.d[,1]
     pk <- p[(length(p) - more$nKappa + 1):length(p)]
-    b <- more$b
+    b <- 8000 * (sin(t / pi) / 2 + 2)
     r[, "S"] =  - tvtrans(t, pk) * yi.d * y[, "S"] + b ## * p["alpha"]
     r[, "I"] =  tvtrans(t, pk) * yi.d * y[, "S"] - p["gamma"] * y[, "I"]
     return(r)
@@ -48,7 +48,6 @@ mDTVSIRfn$dfdx.d <- function (t, y, p, more)
 
 mDTVSIRfn$dfdp <- function (t, y, p, more)
 {
-    ## b <- more$b
     yi.d <- more$y.d[,1]
     r = array(0, c(length(t), ncol(y), length(p)))
     dimnames(r) = list(NULL, colnames(y), names(p))

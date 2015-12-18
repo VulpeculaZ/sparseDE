@@ -19,10 +19,6 @@
 #as.vector(coef(lm(Y~X[,lastsolution!=0]-1)))
 
 
-
-library(lars)
-
-
 lars.pos <-
 function (x, y, type = c("lasso", "lar", "forward.stagewise"),
     trace = FALSE, Gram, eps = .Machine$double.eps, max.steps,
@@ -80,7 +76,6 @@ function (x, y, type = c("lasso", "lar", "forward.stagewise"),
     normx <- rep(1,m)
     ignores <- NULL
   }
-
 
 
 
@@ -169,7 +164,7 @@ function (x, y, type = c("lasso", "lar", "forward.stagewise"),
             }
         }
         else action <- -dropid
-        Gi1 <- backsolve(R, backsolvet(R, Sign))
+        Gi1 <- lars::backsolvet(R, lars::backsolvet(R, Sign))
         dropouts <- NULL
         if (type == "forward.stagewise") {
             directions <- Gi1 * Sign
@@ -244,7 +239,7 @@ function (x, y, type = c("lasso", "lar", "forward.stagewise"),
                 if (trace)
                   cat("Lasso Step", k + 1, ":\t Variable", active[id],
                     "\tdropped\n")
-                R <- downdateR(R, id)
+                R <- lars::downdateR(R, id)
             }
             dropid <- active[drops]
             beta[k + 1, dropid] <- 0
@@ -341,8 +336,8 @@ function (active, Sign, R, beta, Gram, eps = 1e-10, trace = FALSE,
     zero <- NULL
     while (m > 1) {
         zero.old <- c(m, zero)
-        R.old <- downdateR(R, m)
-        beta0 <- backsolve(R.old, backsolvet(R.old, Sign[-zero.old])) *
+        R.old <- lars::downdateR(R, m)
+        beta0 <- lars::backsolve(R.old, lars::backsolvet(R.old, Sign[-zero.old])) *
             Sign[-zero.old]
         beta.old <- c(beta0, rep(0, length(zero.old)))
         if (all(beta0 > 0))
@@ -359,10 +354,10 @@ function (active, Sign, R, beta, Gram, eps = 1e-10, trace = FALSE,
             alpha <- min(alpha0[positive][(beta <= 0)[positive]])
             beta.old <- beta.old + alpha * (beta - beta.old)
             dropouts <- match(alpha, alpha0[positive], 0)
-            for (i in rev(dropouts)) R <- downdateR(R, i)
+            for (i in rev(dropouts)) R <- lars::downdateR(R, i)
             positive <- positive[-dropouts]
             zero <- im[-positive]
-            beta0 <- backsolve(R, backsolvet(R, Sign[positive])) *
+            beta0 <- lars::backsolve(R, lars::backsolvet(R, Sign[positive])) *
                 Sign[positive]
             beta <- beta.old * 0
             beta[positive] <- beta0
@@ -386,8 +381,8 @@ function (active, Sign, R, beta, Gram, eps = 1e-10, trace = FALSE,
                 eps = eps)
         }
         positive <- c(positive, add)
-        zero <- setdiff(zero, add)
-        beta0 <- backsolve(R, backsolvet(R, Sign[positive])) *
+        zero <-  setdiff(zero, add)
+        beta0 <- lars::backsolve(R, lars::backsolvet(R, Sign[positive])) *
             Sign[positive]
         beta[positive] <- beta0
     }
@@ -421,7 +416,7 @@ function (xnew, R = NULL, xold, eps = .Machine$double.eps, Gram = FALSE)
     Xtx <- if (Gram)
         xold
     else (t(xnew) %*% xold)[1, ]
-    r <- backsolvet(R, Xtx)
+    r <- lars::backsolvet(R, Xtx)
     rpp <- norm.xnew^2 - sum(r^2)
     rank <- attr(R, "rank")
     if (rpp <= eps)

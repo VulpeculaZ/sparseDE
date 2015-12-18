@@ -1,4 +1,17 @@
-ProfileSSE.covariance.delay <- function(pars, beta, active = NULL, eps = 1e-06, ...)
+##' .. content for \description{} (no empty lines) ..
+##' Newey-West estimate of covariance of parameter estimates from profiling for DDE models.
+##' .. content for \details{} ..
+##' Currently assumes a lag-5 auto-correlation among observation vectors.
+##' @title ProfileSSE.covariance.DDE
+##' @param pars The estimated parameters.
+##' @param beta The estimated parameters.
+##' @param active Incides indicating which parameters of pars should be estimated; defaults to all of them.
+##' @param eps Step-size for finite difference estimate of second derivatives.
+##' @param ... Additional arguments used for profiling estimation
+##' @return Returns a Newey-West estimate of the covariance matrix of the parameter estimates.
+##' @seealso \code{\link{Profile.LS.DDE}}
+##' @author Ziqian Zhou
+ProfileSSE.covariance.DDE <- function(pars, beta, active = NULL, eps = 1e-06, ...)
 {
     if (is.null(active)) {
         active = 1:length(pars)

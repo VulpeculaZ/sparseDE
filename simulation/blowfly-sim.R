@@ -1,5 +1,6 @@
 library(CollocInfer)
 library(deSolve)
+library(spam)
 source("./R/blowflies.R")
 source("./R/sparse.R")
 source("./R/LS.sparse.R")

@@ -9,8 +9,7 @@ nls.sparse <- function(pars, beta, active, basisvals, fdobj0, times, data, coefs
     for(i in 1:control.out$maxIter){
         for(j in 1:maxStep){
             linObj <- ProfileSSE.AllPar.sparse(pars = pars, beta = beta, times = times, data = data, coefs = coefs, lik = lik, proc = proc, in.meth = in.meth,control.in = control.in, basisvals = basisvals, fdobj0 = fdobj0)
-            f.new <- linObj$f
-            f.new <- sum(f.new^2)
+            f.new <- sum(linObj$f^2)
             if(control.out$echo == TRUE){
                 print(x = c(paste("Iter:", i, f.new)))
                 cat(pars, beta, "\n")
@@ -55,16 +54,24 @@ nls.sparse <- function(pars, beta, active, basisvals, fdobj0, times, data, coefs
             beta <- res$coefficients[(length(pars) + 1) : length(res$coefficients)]
         }
         if(control.out$method == "nnls.eq"){
-            E <- t(c(rep(0, length(pars)), rep(1, length(beta))))
-            F <- 1
-            G <- diag(length(c(pars, beta)))
-            H <- rep(0, length(c(pars, beta)))
+            if(is.null(control.out$E)){
+                E <- t(c(rep(0, length(pars)), rep(1, length(beta))))
+            }
+            if(is.null(control.out$F)){
+                F <- 1
+            }
+            if(is.null(control.out$G)){
+                G <- diag(length(c(pars, beta)))
+            }
+            if(is.null(control.out$H)){
+                H <- rep(0, length(c(pars, beta)))
+            }
             res <- lsei(A= cbind(Xdf, Zdf), B = y, E = E, F=F, G = G, H = H)
             ## res <- nnls(A = cbind(Xdf, Zdf), b= y)
             pars <- res$X[1:length(pars)]
             beta <- res$X[(length(pars) + 1) : (length(pars) + length(beta))]
         }
-        if(control.out$method == "nnls.ineq"){
+        if(control.out$method == "nnls"){
             res <- nnls(A = cbind(Xdf, Zdf), B= y)
             pars <- res$x[1:length(pars)]
             beta <- res$x[(length(pars) + 1) : length(res$x)]
@@ -80,20 +87,6 @@ nls.sparse <- function(pars, beta, active, basisvals, fdobj0, times, data, coefs
 }
 
 
-
-##' .. content for \description{} (no empty lines) ..
-##'
-##' .. content for \details{} ..
-##' @title Evaluate sparse delays.
-##' @param fd0
-##' @param fd.d
-##' @param times
-##' @param tau
-##' @param beta
-##' @param ndelay
-##' @param basis
-##' @return
-##' @author Ziqian Zhou
 delay.fit.sparse <- function(fd0, fd.d, times, tau, beta, ndelay, basis = NULL, lik = FALSE, in.meth = "nlminb"){
     basisvals0 <- fd0$basis
     basisvals.d <- fd.d$basis
@@ -176,6 +169,26 @@ delay.fit.sparse <- function(fd0, fd.d, times, tau, beta, ndelay, basis = NULL, 
     return(list(y.d = y.d.beta, bvals.d = bvals.d[[1]], y.d.list = y.d.list, bvals.d.list = bvals.d.list))
 }
 
+##' .. content for \description{} (no empty lines) ..
+##' Estmates spline coefficients given parameters for DDE models.
+##' .. content for \details{} ..
+##' This minimizes the objective function for DDE models defined by the addition of the \code{lik} and \code{proc} objectives with respect to the coefficients. A number of generic optimization routines can be used and some experimentation is recommended.
+##' @title Inner optimization for estmating coefficients given parameters.
+##' @param data Matrix of observed data values.
+##' @param times Vector observation times for the data.
+##' @param pars Initial values of parameters to be estimated processes.
+##' @param beta Initial values of the contribution of lags for the delay.
+##' @param coefs Vector giving the current estimate of the coefficients in the spline.
+##' @param lik \code{lik} object defining the observation process.
+##' @param proc \code{proc} object defining the state process.
+##' @param in.meth Inner optimization function currently one of ’nlminb’, ’optim’, or ’trust’.
+##' @param control.in Control object for inner optimization function.
+##' @param basisvals Values of the collocation basis to be used. This should be a basis object from the fda package.
+##' @param fdobj0  A functional data object fitted with the history part of the data.
+##' @return A list with elements
+##' \item{coefs}{A matrix giving he optimized coefficients.}
+##' \item{res}{The results of the inner optimization function.}
+##' @author Ziqian Zhou
 inneropt.DDE <- function(data, times, pars, beta, coefs, lik, proc,
                          in.meth = "nlminb", control.in = list(),
                          basisvals, fdobj0)
@@ -264,13 +277,75 @@ inneropt.DDE <- function(data, times, pars, beta, coefs, lik, proc,
     return(list(coefs = ncoefs, res = res))
 }
 
-Profile.LS.sparse <- function(fn, data, times, pars, beta, coefs = NULL, basisvals = NULL,
+##' .. content for \description{} (no empty lines) ..
+##' This function runs generalized profiling for DDE models.
+##' .. content for \details{} ..
+##' This function carry out the profiled optimization method for DDe models using a sum of squared errors criteria for both fit to data and the fit of the derivatives to a delay differential equation.
+##' @title Profile Estimation Functions for DDE
+##' @param fn A named list of functions giving the righthand side of a delay differential equation. The functions should have arguments
+##' \item{times}{he times at which the righthand side is being evaluated.}
+##' \item{x}{The state values at those times.}
+##' \item{p}{Parameters to be entered in the system.}
+##' \item{more}{A list object containing additional inputs to \code{fn}, The distributed delay state are passed into derivative calculation as \code{more$y}.}
+##' The list of functions should contain the elements:
+##' \item{fn}{Function to calculate the right hand sid.}
+##' \item{dfdx}{Function to calculate the derivative of each right-hand function with respect to the states.}
+##' \item{dfdp}{calculates the derivative of therighthand side function with respect to parameters. }
+##' \item{d2fdx2}{Function to calculate the second derivatives with respect to states.}
+##' \item{d2fdxdp}{Function to calculate the cross derivatives of each right-hand function with respect to state and parameters.}
+##' \item{dfdx.d}{Function to calculate the the derivative of each righthand function with respect to the delayed states.}
+##' \item{d2fdx.ddp}{Function to calculate the cross derivatives of each righthand function with respect to the delayed states and parameters.}
+##' \item{d2fdxdx.d}{Function to calculate the cross derivatives of each right-hand function with respect to the state and the delayed states.}
+##' \item{d2fdx.d2}{Function to calculate the second derivatives of the right-hand function with respect to the delayed states.}
+##' @param data Matrix of observed data values.
+##' @param times Vector observation times for the data.
+##' @param pars Initial values of parameters to be estimated processes.
+##' @param beta Initial values of the contribution of lags for the delay.
+##' @param coefs Vector giving the current estimate of the coefficients in the spline.
+##' @param basisvals Values of the collocation basis to be used. This should be a basis object from the fda package.
+##' @param lambda Penalty value trading off fidelity to data with fidelity to dif- ferential equations.
+##' @param fd.obj A functional data object; if this is non-null, coefs and basisvals is extracted from here.
+##' @param more An object specifying additional arguments to fn.
+##' @param weights Weights for weighted estimation.
+##' @param quadrature Quadrature points, should contain two elements (if not \code{NULL})
+##' \item{qpts}{ sQuadrature points; defaults to midpoints between knots}
+##' \item{qwts}{Quadrature weights; defaults to normalizing by the length of qpts.}
+##' @param in.meth Inner optimization function currently one of ’nlminb’, ’optim’, or ’trust’.
+##' @param out.meth Outer optimization function to be used, depending on the type of method.
+##' \item{nls}{Nonlinear least square}
+##' \item{nnls.eq}{Nonlinear least square with equality or/and inequality constraints of the parameters.}
+##' @param control.in Control object for inner optimization function.
+##' @param control.out Control object for outer optimization function.
+##' @param eps Finite differencing step size, if needed.
+##' @param active Incides indicating which parameters of pars should be estimated; defaults to all of them.
+##' @param posproc Should the state vector be constrained to be positive? If this is the case, the state is represented by an exponentiated basis expansion in the proc object.
+##' @param poslik Should the state be exponentiated before being compared to the data? When the state is represented on the log scale (posproc=TRUE), this is an alternative to taking the log of the data.
+##' @param names The names of the state variables if not given by the column names of coefs.
+##' @param sparse Should sparse matrices be used for basis values? This option can save memory when using 'trust' optimization method.
+##' @param basisvals0 Values of the collocation basis to be used for the history part of the data. This should be a basis object from the fda package.
+##' @param coefs0  Vector giving the  estimate of the coefficients in the spline for the history part of the data.
+##' @param nbeta The number of lags for the delay.
+##' @param ndelay A vector inidicating which state process has a delay term.
+##' @param tau A list of delay lags.
+##' @return A list with elements
+##' \item{data}{The matrix for the observed data.}
+##' \item{res}{The inner optimization result.}
+##' \item{ncoefs}{The estimated coefficients.}
+##' \item{lik}{The \code{lik} object generated.}
+##' \item{proc}{The \code{proc} object generated.}
+##' \item{pars}{The estimated parameters.}
+##' \item{beta}{The estimated contribution of lags for the delay.}
+##' \item{times}{The times at which the data are observed.}
+##' \item{fdobj.d}{The functional data object for the estimated state process.}
+##' \item{fdobj0}{The functional data object for the estimated state process of the history part.}
+##' \item{tau}{The lags of delays.}
+##' @author Ziqian Zhou
+Profile.LS.DDE <- function(fn, data, times, pars, beta, coefs = NULL, basisvals = NULL,
     lambda, fd.obj = NULL, more = NULL, weights = NULL, quadrature = NULL,
     in.meth = "nlminb", out.meth = "nls", control.in = list(),
     control.out = list(), eps = 1e-06, active = NULL, posproc = FALSE,
     poslik = FALSE, discrete = FALSE, names = NULL, sparse = FALSE,
-    likfn = make.id(), likmore = NULL, delay = NULL, tauMax = NULL,
-    basisvals0 = NULL, coefs0 = NULL, nbeta, ndelay, tau)
+    likfn = make.id(), likmore = NULL, basisvals0 = NULL, coefs0 = NULL, nbeta, ndelay, tau)
 {
     if (is.null(active)) {
         active = 1:length(pars)
@@ -313,6 +388,7 @@ Profile.LS.sparse <- function(fn, data, times, pars, beta, coefs = NULL, basisva
     proc$more$more$ndelay <- lik$more$more$ndelay <- ndelay
     proc$more$more$nbeta <- lik$more$more$nbeta <- sapply(tau, length)
     proc$more$more$tau <- lik$more$more$tau <- tau
+    delay <- make.delay()
     proc$dfdc <- delay$dfdc
     proc$d2fdc2 <- delay$d2fdc2.DDE
     proc$d2fdcdp <- delay$d2fdcdp.sparse
@@ -331,9 +407,14 @@ Profile.LS.sparse <- function(fn, data, times, pars, beta, coefs = NULL, basisva
     if (is.null(control.out$tol)){
         control.out$tol = 1e-08
     }
+     if (is.null(control.out$method)){
+        control.out$method <- out.meth
+    }
     res <- nls.sparse(pars = pars, beta = beta, active = active, basisvals = basisvals, fdobj0 = fdobj0, times = times, data = data, coefs = ncoefs, lik = lik, proc = proc, control.out = control.out, control.in = control.in, in.meth = in.meth)
     ncoefs <- res$coefs
-    return(list( data = data,res = res, ncoefs = ncoefs))
+    fdobj.d <- list(coefs = coefs, basis = basisvals, fdnames =fdnames)
+    attr(fdobj.d, "class") <- "fd"
+    return(list( data = data, res = res, ncoefs = ncoefs, lik = lik, proc = proc, pars = res$pars, beta = res$beta, times = times, fdobj.d = fdobj.d, fdobj0 = fdobj0,  tau = tau))
 }
 
 
@@ -343,22 +424,6 @@ ProfileSSE.AllPar.sparse <- function(pars, beta, times, data, coefs, lik, proc,
                              basisvals, fdobj0)
 {
     ## Squared Error outer criterion
-    ##    coefs = as.vector(coefs)  # First run the inner optimization
-    ##
-    ## f1 = SplineCoefsErr.DDE(coefs,times,data,lik,proc,pars, beta, basisvals = basisvals, fdobj0 = fdobj0)
-    ## The coefficients for delayed times:
-    ##################################################
-    ## Not Sure:
-    ## if(!is.null(dcdp)){
-    ##     tcoefs = as.vector(coefs) + dcdp%*%(pars-oldpars);
-    ##     f2 = SplineCoefsErr(tcoefs,times,data,lik,proc,pars)
-    ##     if(f2 < f1){
-    ##         coefs = tcoefs
-    ##         f1 = f2
-    ##     }
-    ## }
-    ###################################################
-    ## Inner optimization need to be changed as well.
     Ires = inneropt.DDE(data,times,pars, beta, coefs,lik,proc, in.meth,control.in, basisvals = basisvals, fdobj0 = fdobj0)
     ncoefs = Ires$coefs
     fdnames <- list(NULL, NULL, NULL)
@@ -380,7 +445,8 @@ ProfileSSE.AllPar.sparse <- function(pars, beta, times, data, coefs, lik, proc,
     devals = as.matrix(lik$bvals%*%ncoefs)
     colnames(devals) = proc$more$names
     ## Squared errors: No need to change for DDE
-    weights = checkweights(lik$more$weights,lik$more$whichobs,data)
+    weights <- checkweights(lik$more$weights,lik$more$whichobs,data)
+    weights <- mat(weights)
     f = as.vector(as.matrix(data - lik$more$fn(times, devals, pars, lik$more$more))*sqrt(weights))
     isnaf = is.na(f)
     f[isnaf] = 0
@@ -514,25 +580,68 @@ SplineCoefsDCDP.sparse <- function (coefs, times, data, lik, proc, pars, sgn = 1
     return(as.matrix(sgn * H))
 }
 
-LS.sparse <- function(fn, data, times, basisvals = NULL,
+
+##' .. content for \description{} (no empty lines) ..
+##'  This function carry out one step sparsity selection for the lags of delay given the profiled optimization result.
+##' .. content for \details{} ..
+##' @title  Sparsity selection for the lags of delay.
+##' @param fn A named list of functions giving the righthand side of a delay differential equation. The functions should have arguments
+##' \item{times}{he times at which the righthand side is being evaluated.}
+##' \item{x}{The state values at those times.}
+##' \item{p}{Parameters to be entered in the system.}
+##' \item{more}{A list object containing additional inputs to \code{fn}, The distributed delay state are passed into derivative calculation as \code{more$y}.}
+##' The list of functions should contain the elements:
+##' \item{fn}{Function to calculate the right hand sid.}
+##' \item{dfdx}{Function to calculate the derivative of each right-hand function with respect to the states.}
+##' \item{dfdp}{calculates the derivative of therighthand side function with respect to parameters. }
+##' \item{d2fdx2}{Function to calculate the second derivatives with respect to states.}
+##' \item{d2fdxdp}{Function to calculate the cross derivatives of each right-hand function with respect to state and parameters.}
+##' \item{dfdx.d}{Function to calculate the the derivative of each righthand function with respect to the delayed states.}
+##' \item{d2fdx.ddp}{Function to calculate the cross derivatives of each righthand function with respect to the delayed states and parameters.}
+##' \item{d2fdxdx.d}{Function to calculate the cross derivatives of each right-hand function with respect to the state and the delayed states.}
+##' \item{d2fdx.d2}{Function to calculate the second derivatives of the right-hand function with respect to the delayed states.}
+##' @param data Matrix of observed data values.
+##' @param times Vector observation times for the data.
+##' @param basisvals Values of the collocation basis to be used. This should be a basis object from the fda package.
+##' @param lambda Penalty value trading off fidelity to data with fidelity to dif- ferential equations.
+##' @param fd.obj A functional data object; if this is non-null, coefs and basisvals is extracted from here.
+##' @param more An object specifying additional arguments to fn.
+##' @param weights Weights for weighted estimation.
+##' @param quadrature Quadrature points, should contain two elements (if not \code{NULL})
+##' \item{qpts}{ sQuadrature points; defaults to midpoints between knots}
+##' \item{qwts}{Quadrature weights; defaults to normalizing by the length of qpts.}
+##' @param in.meth Inner optimization function currently one of ’nlminb’, ’optim’, or ’trust’.
+##' @param out.meth Outer optimization selection function to be used, depending on the type of method.
+##' \item{"penalized"}{Uses LASSO method from \code{penalized} package.}
+##' \item{"addaptive"}{Positive addaptive lasso using lars algorithm.}
+##' \item{"lars"}{Positive lasso using lars algorithm.}
+##' @param control.in Control object for inner optimization function.
+##' @param control.out Control object for outer optimization function.
+##' @param eps Finite differencing step size, if needed.
+##' @param active Incides indicating which parameters of pars should be estimated; defaults to all of them.
+##' @param posproc Should the state vector be constrained to be positive? If this is the case, the state is represented by an exponentiated basis expansion in the proc object.
+##' @param poslik Should the state be exponentiated before being compared to the data? When the state is represented on the log scale (posproc=TRUE), this is an alternative to taking the log of the data.
+##' @param names The names of the state variables if not given by the column names of coefs.
+##' @param sparse Should sparse matrices be used for basis values? This option can save memory when using 'trust' optimization method.
+##' @param basisvals0 Values of the collocation basis to be used for the history part of the data. This should be a basis object from the fda package.
+##' @param coefs0 Vector giving the  estimate of the coefficients in the spline for the history part of the data.
+##' @param nbeta The number of lags for the delay.
+##' @param ndelay A vector inidicating which state process has a delay term.
+##' @param tau A list of delay lags.
+##' @param nnls.res \code{res} item returned from \code{\link{Profile.LS.DDE}}
+##' @return A list with elements
+##' \item{data}{The matrix for the observed data.}
+##' \item{res}{The inner optimization result.}
+##' \item{select}{A list containing the result after selection, the parameter, delay contribution and coefficients after the selection.}
+##' @seealso \code{\link{Profile.LS.DDE}}
+##' @author Ziqian Zhou
+sparse.DDE <- function(fn, data, times, basisvals = NULL,
     lambda, fd.obj = NULL, more = NULL, weights = NULL, quadrature = NULL,
     in.meth = "nlminb", out.meth = "nls", control.in = list(),
     control.out = list(), eps = 1e-06, active = NULL, posproc = FALSE,
-    poslik = FALSE, discrete = FALSE, names = NULL, sparse = FALSE,
-    likfn = make.id(), likmore = NULL, delay = NULL, tauMax = NULL,
+    poslik = FALSE,  names = NULL, sparse = FALSE,
     basisvals0 = NULL, coefs0 = NULL, nbeta, ndelay, tau, nnls.res)
 {
-    ##################################################
-    ## Added to orginal Profile.LS
-    ## if(is.null(tauMax)) tauMax <- min(times) + 1/3 * (range(times)[2]- range(times)[1])
-    ## Prepare to calculate the delay:
-    ## data.d <- data[times>=tauMax, ,drop = FALSE]
-    ## times.d <- knots.d <- times[times >= tauMax]
-    ## norder <- basisvals$nbasis - length(basisvals$params)
-    ## nbasis.d <- length(knots.d) + norder - 2
-    ## range.d <- range(knots.d)
-    ## basisvals.d and basisvals.0 are supplied rather than created
-    ## basisvals.d <- create.bspline.basis(range=range.d, nbasis=nbasis.d, norder=norder, breaks=knots.d)
     betanames <- c()
     for(i in 1:length(nbeta)){
         for(j in 1:nbeta[i]){
@@ -578,6 +687,7 @@ LS.sparse <- function(fn, data, times, basisvals = NULL,
     proc$more$more$ndelay <- lik$more$more$ndelay <- ndelay
     proc$more$more$nbeta <- lik$more$more$nbeta <- sapply(tau, length)
     proc$more$more$tau <- lik$more$more$tau <- tau
+    delay <- make.delay()
     proc$dfdc <- delay$dfdc
     proc$d2fdc2 <- delay$d2fdc2.DDE
     proc$d2fdcdp <- delay$d2fdcdp.sparse
@@ -592,11 +702,13 @@ LS.sparse <- function(fn, data, times, basisvals = NULL,
     if (is.null(control.out$tol)){
         control.out$tol = 1e-08
     }
+    if(is.null(control.out$selection.method)){
+        control.out$selection.method <- out.meth
+    }
     res <- nnls.res
-    ncoefs <- res$coefs
     if(is.null(control.out$pars.c))
         control.out$pars.c <- 100
-    if(control.out$lambda.sparse == -1){
+    if(control.out$selection.method == "penalized"){
         Zdf <- res$Zdf
         Xdf <- res$Xdf
         y <- res$y
@@ -605,7 +717,7 @@ LS.sparse <- function(fn, data, times, basisvals = NULL,
         pars.pen <- beta.pen <- coefs.pen <- list()
         bic <- f <- rep(NA, length(lambda))
         for(i in 1:length(lambda)){
-            lambda.sparse <- lambda[i]
+            selection.method <- lambda[i]
             res.sparse <- penalized(response = y, penalized = Zdf, unpenalized = Xdf, lambda1 = lambda[i], positive = TRUE, trace = FALSE)
             pars.pen[[i]] <- res.sparse@unpenalized
             beta.pen[[i]] <- res.sparse@penalized
@@ -620,51 +732,8 @@ LS.sparse <- function(fn, data, times, basisvals = NULL,
         i.select <- which(bic == min(bic))
         sel.res <- list(pars.pen = pars.pen[[i.select]], beta.pen = beta.pen[[i.select]], bic = bic[i.select], coefs.pen = coefs.pen[[i.select]], lambda = lambda[i.select])
     }
-
-    if(control.out$lambda.sparse == -2){
-        ## Positive addaptive lasso using lars: Total eliminatioin
-        ## NOT WORKING!!
-        w.pars <- abs(res$pars) * control.out$pars.c
-        w.beta <- abs(res$beta)                      # weights for adaptive lasso
-        beta.ind <- which(w.beta > 0)
-        w.beta <- w.beta[beta.ind]
-        w <- c(w.pars, w.beta)
-        x <- cbind(res$Xdf, res$Zdf[, beta.ind])
-        n <- nrow(x)
-        one <- rep(1, n)
-        meanx <- drop(one %*% x)/n
-        xc <- scale(x, meanx, FALSE)         # first subtracts mean
-        normx <- sqrt(drop(one %*% (xc^2)))
-        names(normx) <- NULL
-        xs <- scale(xc, FALSE, normx)        # now rescales with norm (not sd)
-        xs <- scale(xs, center=FALSE,scale=1/w)  # xs times the weights
-        object <- lars.pos(x = xs, y = res$y, positive = TRUE, normalize = FALSE)
-        object$beta <- object$beta[which(rowSums(object$beta[,1:length(res$pars), drop=FALSE] > 0) > 0 ),, drop = FALSE]
-        object$beta <- sweep(object$beta, 1, w, "*")
-        bic <- rep(0, dim(object$beta)[2])
-        coefs.pen <- list()
-        for(i in 1:dim(object$beta)[1]){
-            pars.al1 <- object$beta[1:length(pars),i]
-            names(pars.al1) <- names(pars)
-            beta.al1 <- rep(0, length(beta))
-            beta.al1[beta.ind] <- object$beta[(1+length(pars)) : dim(object$beta)[1],i]
-            Ires <- inneropt.DDE(data, times, par = pars.al1, beta = beta.al1,  ncoefs, lik, proc, in.meth, control.in, basisvals = basisvals, fdobj0 = fdobj0)
-            devals <- as.matrix(lik$bvals%*%Ires$coefs)
-            f <- as.vector(as.matrix(data - lik$more$fn(times, devals, pars, lik$more$more)))
-            coefs.pen[[i]] <- Ires$coefs
-            sd.pen <- sd(f)
-            ll.pen <- - sum(f^2) / (sd.pen^2) / 2 - length(f) * log(sd.pen)
-            bic[i] <- -2 * ll.pen + (sum(beta.al1 > .Machine$double.eps) + length(pars.al1)) * log(length(data))
-        }
-        i.select <- which(bic == min(bic))
-        pars.al1 <- object$beta[1:length(pars),i.select]
-        names(pars.al1) <- names(pars)
-        beta.al1 <- rep(0, length(beta))
-        beta.al1[beta.ind] <- object$beta[(1+length(pars)) : dim(object$beta)[1],i.select]
-        sel.res <- list(pars = pars.al1, beta = beta.al1, bic = bic[i.select], coefs = coefs.pen[[i.select]], lambda = lambda[i.select])
-    }
     ## Positive addaptive lasso using lars: Partial eliminatioin:
-    if(control.out$lambda.sparse == -3){
+    if(control.out$selection.method == "addaptive"){
         y <- res$y - res$Xdf %*% res$pars
         w.beta <- abs(res$beta)                      # weights for adaptive lasso
         w.beta[w.beta == 0] <- min(w.beta[w.beta > 0]) / 2
@@ -696,7 +765,7 @@ LS.sparse <- function(fn, data, times, basisvals = NULL,
         sel.res <- list(pars = res$pars, beta = beta.al, bic = bic[i.select], coefs = coefs.pen[[i.select]])
     }
     ## Positive Lars:
-    if(control.out$lambda.sparse == -4){
+    if(control.out$selection.method == "lars"){
         Zdf <- res$Zdf
         y <- res$y - res$Xdf %*% res$pars
         object <- lars.pos(Zdf,y, positive = TRUE)
@@ -716,12 +785,7 @@ LS.sparse <- function(fn, data, times, basisvals = NULL,
         beta.al <- object$beta[i.select ,]
         sel.res <- list(pars = res$pars, beta = beta.al, bic = bic[i.select], coefs = coefs.pen[[i.select]])
     }
-    if(control.out$lambda.sparse < 0){
-        return(list( data = data,res = res, select = sel.res))
-    }else{
-        return(list( data = data,res = res))
-    }
-
+    return(list( data = data,res = res, select = sel.res))
 }
 
 
@@ -910,6 +974,7 @@ ProfileDP.sparse <- function(pars, beta, fn, data, times, coefs = NULL, basisval
     proc$more$more$ndelay <- lik$more$more$ndelay <- ndelay
     proc$more$more$nbeta <- lik$more$more$nbeta <- sapply(tau, length)
     proc$more$more$tau <- lik$more$more$tau <- tau
+    delay <- make.delay()
     proc$dfdc <- delay$dfdc
     proc$d2fdc2 <- delay$d2fdc2.DDE
     proc$d2fdcdp <- delay$d2fdcdp.sparse

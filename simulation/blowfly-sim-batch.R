@@ -1,10 +1,5 @@
-library(CollocInfer)
-library(deSolve)
-source("./R/blowflies.R")
-source("./R/sparse.R")
-source("./R/LS.sparse.R")
-## library(trustOptim)
-library(limSolve)
+library(gpDDE)
+load("./R/make.blowfly.R")
 ## detach("package:limSolve", unload = TRUE)
 
 load("data-blowfly-250.RData")
@@ -57,7 +52,7 @@ for(i in 1:length(dataRange)){
     lambda <- 1000
     initBeta <- data.res[[dataRange[i]]]$initBeta
     initPars <- data.res[[dataRange[i]]]$initPars
-    dde.fit <- Profile.LS.sparse(blowfliesfn, blowfly.data.d, times.d, pars = initPars, beta = initBeta, coefs = coefs.d, basisvals = bbasis.d, lambda = lambda, in.meth='nlminb', delay = delay, basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 1, tau = tau, control.out = list(method = "nnls", maxIter = 50, lambda.sparse = 0, echo = TRUE))
+    dde.fit <- Profile.LS.DDE(blowfliesfn, blowfly.data.d, times.d, pars = initPars, beta = initBeta, coefs = coefs.d, basisvals = bbasis.d, lambda = lambda, in.meth='nlminb',  basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 1, tau = tau, control.out = list(method = "nnls.eq", maxIter = 50, lambda.sparse = 0, echo = TRUE))
     nnls.res[[i]] <- dde.fit$res
     save(nnls.res, file =filename)
 }

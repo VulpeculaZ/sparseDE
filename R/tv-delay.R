@@ -1,15 +1,78 @@
-Profile.LS.tv.delay <- function(fn, data, times, pars, beta, kappa, coefs = NULL, basisvals = NULL,
+##' .. content for \description{} (no empty lines) ..
+##' This function runs generalized profiling for DDE models with time varying coefficients.
+##' .. content for \details{} ..
+##' This function carry out the profiled optimization method for DDe models using a sum of squared errors criteria for both fit to data and the fit of the derivatives to a delay differential equation with time varying coefficients.
+##' @title Profile Estimation Functions for DDE with Time Varying Coefficients.
+##' @param fn fn A named list of functions giving the righthand side of a delay differential equation. The functions should have arguments
+##' \item{times}{he times at which the righthand side is being evaluated.}
+##' \item{x}{The state values at those times.}
+##' \item{p}{Parameters to be entered in the system.}
+##' \item{more}{A list object containing additional inputs to \code{fn}, The distributed delay state are passed into derivative calculation as \code{more$y.
+##' The list of functions should contain the elements:
+##' \item{fn}{Function to calculate the right hand sid.}
+##' \item{dfdx}{Function to calculate the derivative of each right-hand function with respect to the states.}
+##' \item{dfdp}{calculates the derivative of therighthand side function with respect to parameters. }
+##' \item{d2fdx2}{Function to calculate the second derivatives with respect to states.}
+##' \item{d2fdxdp}{Function to calculate the cross derivatives of each right-hand function with respect to state and parameters.}
+##' \item{dfdx.d}{Function to calculate the the derivative of each righthand function with respect to the delayed states.}
+##' \item{d2fdx.ddp}{Function to calculate the cross derivatives of each righthand function with respect to the delayed states and parameters.}
+##' \item{d2fdxdx.d}{Function to calculate the cross derivatives of each right-hand function with respect to the state and the delayed states.}
+##' \item{d2fdx.d2}{Function to calculate the second derivatives of the right-hand function with respect to the delayed states.}
+##' @param data Matrix of observed data values.
+##' @param times Vector observation times for the data.
+##' @param pars Initial values of parameters to be estimated processes.
+##' @param beta Initial values of the contribution of lags for the delay.
+##' @param kappa Initial values of parameters for a time varying function.
+##' @param coefs Vector giving the current estimate of the coefficients in the spline.
+##' @param basisvals Values of the collocation basis to be used. This should be a basis object from the fda package.
+##' @param lambda Penalty value trading off fidelity to data with fidelity to dif- ferential equations.
+##' @param fd.obj A functional data object; if this is non-null, coefs and basisvals is extracted from here.
+##' @param more An object specifying additional arguments to fn.
+##' @param weights Weights for weighted estimation.
+##' @param quadrature Quadrature points, should contain two elements (if not \code{NULL})
+##' \item{qpts}{ sQuadrature points; defaults to midpoints between knots}
+##' \item{qwts}{Quadrature weights; defaults to normalizing by the length of qpts.}
+##' @param in.meth Inner optimization function currently one of ’nlminb’, ’optim’, or ’trust’.
+##' @param out.meth Outer optimization function to be used, depending on the type of method.
+##' \item{nls}{Nonlinear least square}
+##' \item{nnls.eq}{Nonlinear least square with equality or/and inequality constraints of the parameters.}
+##' @param control.in Control object for inner optimization function.
+##' @param control.out Control object for outer optimization function.
+##' @param eps Finite differencing step size, if needed.
+##' @param active Incides indicating which parameters of pars should be estimated; defaults to all of them.
+##' @param posproc Should the state vector be constrained to be positive? If this is the case, the state is represented by an exponentiated basis expansion in the proc object.
+##' @param poslik Should the state be exponentiated before being compared to the data? When the state is represented on the log scale (posproc=TRUE), this is an alternative to taking the log of the data.
+##' @param names The names of the state variables if not given by the column names of coefs.
+##' @param sparse Should sparse matrices be used for basis values? This option can save memory when using 'trust' optimization method.
+##' @param basisvals0 Values of the collocation basis to be used for the history part of the data. This should be a basis object from the fda package.
+##' @param coefs0 Vector giving the  estimate of the coefficients in the spline for the history part of the data.
+##' @param nbeta The number of lags for the delay.
+##' @param ndelay A vector inidicating which state process has a delay term.
+##' @param tau A list of delay lags.
+##' @return A list with elements
+##' \item{data}{The matrix for the observed data.}
+##' \item{res}{The inner optimization result.}
+##' \item{ncoefs}{The estimated coefficients.}
+##' \item{lik}{The \code{lik} object generated.}
+##' \item{proc}{The \code{proc} object generated.}
+##' \item{pars}{The estimated parameters.}
+##' \item{beta}{The estimated contribution of lags for the delay.}
+##' \item{kappa}{The estimated parameters for the time varying function.}
+##' \item{times}{The times at which the data are observed.}
+##' \item{fdobj.d}{The functional data object for the estimated state process.}
+##' \item{fdobj0}{The functional data object for the estimated state process of the history part.}
+##' \item{tau}{The lags of delays.}
+##' @author Ziqian Zhou
+Profile.LS.TV.DDE <- function(fn, data, times, pars, beta, kappa, coefs = NULL, basisvals = NULL,
     lambda, fd.obj = NULL, more = NULL, weights = NULL, quadrature = NULL,
     in.meth = "nlminb", out.meth = "nls", control.in = list(),
     control.out = list(), eps = 1e-06, active = NULL, posproc = FALSE,
-    poslik = FALSE, discrete = FALSE, names = NULL, sparse = FALSE,
-    likfn = make.id(), likmore = NULL, delay = NULL, tauMax = NULL,
+    poslik = FALSE, names = NULL, sparse = FALSE,
     basisvals0 = NULL, coefs0 = NULL, nbeta, ndelay, tau)
 {
     if (is.null(active)) {
         active = 1:length(c(pars, kappa))
     }
-
     ## Create y.d
     fdnames <- list(NULL, NULL, NULL)
     fdnames[[2]] <- attr(coefs, "dimnames")[[2]]
@@ -53,6 +116,7 @@ Profile.LS.tv.delay <- function(fn, data, times, pars, beta, kappa, coefs = NULL
     proc$more$more$ndelay <- lik$more$more$ndelay <- ndelay
     proc$more$more$nbeta <- lik$more$more$nbeta <- sapply(tau, length)
     proc$more$more$tau <- lik$more$more$tau <- tau
+    delay <- make.delay()
     proc$dfdc <- delay$dfdc
     proc$d2fdc2 <- delay$d2fdc2.DDE
     proc$d2fdcdp <- delay$d2fdcdp.sparse
@@ -78,7 +142,7 @@ Profile.LS.tv.delay <- function(fn, data, times, pars, beta, kappa, coefs = NULL
     }
     res <- nls.tv.delay(pars = pars, beta = beta, kappa = kappa, active = active, basisvals = basisvals, fdobj0 = fdobj0, times = times, data = data, coefs = ncoefs, lik = lik, proc = proc, control.out = control.out, control.in = control.in, in.meth = in.meth)
     ncoefs <- res$coefs
-    return(list( data = data,res = res, ncoefs = ncoefs))
+    return(list( data = data, res = res, ncoefs = ncoefs, lik = lik, proc = proc, pars = res$pars, beta = res$beta, kappa = res$kappa, times = times, fdobj.d = fdobj.d, fdobj0 = fdobj0,  tau = tau))
 }
 
 
@@ -126,7 +190,7 @@ nls.tv.delay <- function(pars, beta, kappa, active, basisvals, fdobj0, times, da
         Zdf <- - linObj$df[, (length(pars) +1): dim(linObj$df)[2]]
         y <- - linObj$df %*% c(pars, kappa, beta) + linObj$f
         coefs <- linObj$coefs
-        if(control.out$method == "nnls"){
+        if(control.out$method == "nnls.eq"){
             E <- t(c(rep(0, length(pars)) , rep(0, length(kappa)), rep(1, length(beta))))
             F <- 1
             G <- diag(length(c(pars, kappa, beta)))
@@ -143,13 +207,65 @@ nls.tv.delay <- function(pars, beta, kappa, active, basisvals, fdobj0, times, da
     return(list(pars=pars.old, kappa = kappa.old, beta = beta.old, coefs = coefs, f = f.new, y = y, Xdf = Xdf, Zdf = Zdf, conv = list(f = f.conv, pars.kappa.beta=pars.kappa.beta,  conv.message = "Maximum iterations reached.")))
 }
 
-
-sparse.tv.delay <- function(fn, data, times, pars, beta, kappa, coefs = NULL, basisvals = NULL,
+##' .. content for \description{} (no empty lines) ..
+##' Sparsity selection for the lags of delay and time varying coefficients
+##' .. content for \details{} ..
+##' This function carry out one step sparsity selection for the lags of delay given the profiled optimization result.
+##' @title Sparsity selection for the lags of delay and time varying coefficients
+##' @param fn A named list of functions giving the righthand side of a delay differential equation. The functions should have arguments
+##' \item{times}{he times at which the righthand side is being evaluated.}
+##' \item{x}{The state values at those times.}
+##' \item{p}{Parameters to be entered in the system.}
+##' \item{more}{A list object containing additional inputs to \code{fn}, The distributed delay state are passed into derivative calculation as \code{more$y.
+##' The list of functions should contain the elements:
+##' \item{fn}{Function to calculate the right hand sid.}
+##' \item{dfdx}{Function to calculate the derivative of each right-hand function with respect to the states.}
+##' \item{dfdp}{calculates the derivative of therighthand side function with respect to parameters. }
+##' \item{d2fdx2}{Function to calculate the second derivatives with respect to states.}
+##' \item{d2fdxdp}{Function to calculate the cross derivatives of each right-hand function with respect to state and parameters.}
+##' \item{dfdx.d}{Function to calculate the the derivative of each righthand function with respect to the delayed states.}
+##' \item{d2fdx.ddp}{Function to calculate the cross derivatives of each righthand function with respect to the delayed states and parameters.}
+##' \item{d2fdxdx.d}{Function to calculate the cross derivatives of each right-hand function with respect to the state and the delayed states.}
+##' \item{d2fdx.d2}{Function to calculate the second derivatives of the right-hand function with respect to the delayed states.}
+##' @param data Matrix of observed data values.
+##' @param times Vector observation times for the data.
+##' @param basisvals  Values of the collocation basis to be used. This should be a basis object from the fda package.
+##' @param lambda Penalty value trading off fidelity to data with fidelity to dif- ferential equations.
+##' @param fd.obj A functional data object; if this is non-null, coefs and basisvals is extracted from here.
+##' @param more An object specifying additional arguments to fn.
+##' @param weights Weights for weighted estimation.
+##' @param quadrature Quadrature points, should contain two elements (if not \code{NULL})
+##' \item{qpts}{ sQuadrature points; defaults to midpoints between knots}
+##' \item{qwts}{Quadrature weights; defaults to normalizing by the length of qpts.}
+##' @param in.meth Inner optimization function currently one of ’nlminb’, ’optim’, or ’trust’.
+##' @param out.meth Outer optimization selection function to be used, depending on the type of method.
+##' \item{"penalized"}{Uses LASSO method from \code{penalized} package.}
+##' @param control.in Control object for inner optimization function.
+##' @param control.out Control object for outer optimization function.
+##' @param eps Finite differencing step size, if needed.
+##' @param active Incides indicating which parameters of pars should be estimated; defaults to all of them.
+##' @param posproc Should the state vector be constrained to be positive? If this is the case, the state is represented by an exponentiated basis expansion in the proc object.
+##' @param poslik Should the state be exponentiated before being compared to the data? When the state is represented on the log scale (posproc=TRUE), this is an alternative to taking the log of the data.
+##' @param names The names of the state variables if not given by the column names of coefs.
+##' @param sparse Should sparse matrices be used for basis values? This option can save memory when using 'trust' optimization method.
+##' @param basisvals0 Values of the collocation basis to be used for the history part of the data. This should be a basis object from the fda package.
+##' @param coefs0 Vector giving the  estimate of the coefficients in the spline for the history part of the data.
+##' @param nbeta The number of lags for the delay.
+##' @param ndelay A vector inidicating which state process has a delay term.
+##' @param tau A list of delay lags.
+##' @param nnls.res nnls.res \code{res} item returned from \code{\link{Profile.LS.DDE}}
+##' @return  A list with elements
+##' \item{data}{The matrix for the observed data.}
+##' \item{res}{The inner optimization result.}
+##' \item{select}{A list containing the result after selection, the parameter, delay contribution and coefficients after the selection.}
+##' @seealso \code{\link{Profile.LS.TV.DDE}}
+##' @author Ziqian Zhou
+sparse.TV.DDE <- function(fn, data, times, basisvals = NULL,
     lambda, fd.obj = NULL, more = NULL, weights = NULL, quadrature = NULL,
     in.meth = "nlminb", out.meth = "nls", control.in = list(),
     control.out = list(), eps = 1e-06, active = NULL, posproc = FALSE,
-    poslik = FALSE, discrete = FALSE, names = NULL, sparse = FALSE,
-    likfn = make.id(), likmore = NULL,delay, basisvals0 = NULL, coefs0 = NULL,  nbeta, ndelay, tau, nnls.res)
+    poslik = FALSE, names = NULL, sparse = FALSE,
+    basisvals0 = NULL, coefs0 = NULL,  nbeta, ndelay, tau, nnls.res)
 {
     betanames <- c()
     for(i in 1:length(nbeta)){
@@ -157,9 +273,9 @@ sparse.tv.delay <- function(fn, data, times, pars, beta, kappa, coefs = NULL, ba
             betanames <- c(betanames,paste("beta",i,".",j, sep = ""))
         }
     }
-    ## pars <- nnls.res$pars
-    ## beta <- nnls.res$beta
-    ## kappa <- nnls.res$kappa
+    pars <- nnls.res$pars
+    beta <- nnls.res$beta
+    kappa <- nnls.res$kappa
     coefs <- nnls.res$coefs
     if (is.null(active)) {
         active = 1:length(c(pars,beta, kappa))
@@ -182,7 +298,7 @@ sparse.tv.delay <- function(fn, data, times, pars, beta, kappa, coefs = NULL, ba
     lik = profile.obj$lik
     proc = profile.obj$proc
     proc$more$more$nKappa <- length(kappa)
-    coefs = profile.obj$coefs
+    coefs <- profile.obj$coefs
     data = profile.obj$data
     times = profile.obj$times
     proc$more$betanames <- betanames
@@ -200,6 +316,7 @@ sparse.tv.delay <- function(fn, data, times, pars, beta, kappa, coefs = NULL, ba
     proc$more$more$ndelay <- lik$more$more$ndelay <- ndelay
     proc$more$more$nbeta <- lik$more$more$nbeta <- sapply(tau, length)
     proc$more$more$tau <- lik$more$more$tau <- tau
+    delay <- make.delay()
     proc$dfdc <- delay$dfdc
     proc$d2fdc2 <- delay$d2fdc2.DDE
     proc$d2fdcdp <- delay$d2fdcdp.sparse
@@ -215,18 +332,19 @@ sparse.tv.delay <- function(fn, data, times, pars, beta, kappa, coefs = NULL, ba
     if (is.null(control.out$tol)){
         control.out$tol = 1e-08
     }
+    if(is.null(control.out$selection.method)){
+        control.out$selection.method <- out.meth
+    }
     res <- nnls.res
-    ncoefs <- res$coefs
     if(is.null(control.out$pars.c))
         control.out$pars.c <- 100
-    if(control.out$lambda.sparse == -1){
+    if(control.out$lambda.sparse == "penalized"){
         if(is.null(control.out$maxInnerIter)) maxInnerIter <- 50
         if(is.null(control.out$lambda.len)) nlambda <- 10
 
         Zdf1 <- res$Zdf[, 1: length(kappa), drop = FALSE]
         Zdf2 <- res$Zdf[,(1+length(kappa)):(length(kappa)+length(beta)),drop = FALSE]
         Xdf <- res$Xdf
-
         y <- res$y
         Z1 <- rowSums(Zdf1)
         Z2 <- rowSums(Zdf2)
@@ -277,7 +395,7 @@ sparse.tv.delay <- function(fn, data, times, pars, beta, kappa, coefs = NULL, ba
         ij.select <- which(bic == min(bic))
         sel.res <- list(pars.pen = pars.pen[[ij.select]], kappa.pen = kappa.pen[[ij.select]], beta.pen = beta.pen[[ij.select]], bic = bic[ij.select], coefs.pen = coefs.pen[[ij.select]], lambda = c(lambda1[ceiling(ij.select / nlambda)], lambda2[ifelse(ij.select %% nlambda == 0, nlambda, ij.select %% nlambda)]))
     }
-    return(list(select = sel.res))
+    return(list(data = data, res = res, sel.res))
 }
 
 ## Initialize with unobserved data
@@ -336,6 +454,7 @@ init.unob.LS.tv.delay <- function(fn, data, times, pars, beta, kappa, coefs = NU
     proc$more$more$ndelay <- lik$more$more$ndelay <- ndelay
     proc$more$more$nbeta <- lik$more$more$nbeta <- sapply(tau, length)
     proc$more$more$tau <- lik$more$more$tau <- tau
+    delay <- make.delay()
     proc$dfdc <- delay$dfdc
     proc$d2fdc2 <- delay$d2fdc2.DDE
     proc$d2fdcdp <- delay$d2fdcdp.sparse

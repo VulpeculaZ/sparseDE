@@ -923,15 +923,11 @@ initBeta <- rep(0, 8)
 initBeta[4:6] <- c(0.25, 0.5, 0.25)
 blowfly.pars <- c(150 / 15, 3 / 15 , 1000)
 names(blowfly.pars) <- c("c", "a", "N0")
-
-##args <- commandArgs(TRUE)
-## lambda <- 10^(-as.numeric(args[1])) * 10
+tau <- list(seq(0, 14, 2))
 lambda <- 150
 
-initBeta <- 1
-blowfly.pars
 
-dde.fit <- Profile.LS.sparse(blowfliesfn, blowfly.data.d, times.d, pars = blowfly.pars, beta = initBeta, coefs = coefs.d, basisvals = bbasis.d, lambda = lambda, in.meth='nlminb', delay = delay, basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 1, tau = list(15), control.out = list(method = "nnls", maxIter = 20, lambda.sparse = 0, echo = TRUE))
+dde.fit <- Profile.LS.sparse(blowfliesfn, blowfly.data.d, times.d, pars = blowfly.pars, beta = initBeta, coefs = coefs.d, basisvals = bbasis.d, lambda = lambda, in.meth='nlminb', delay = delay, basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 1, tau = tau, control.out = list(method = "nnls.eq", maxIter = 20, lambda.sparse = 0, echo = TRUE))
 
 DEfd.fit <- fd(dde.fit$res$coefs, bbasis.d)
 plotfit.fd(blowfly.data.d, times.d, DEfd.fit)
@@ -961,3 +957,4 @@ DEfd.fit <- fd(dde.fit3$res$coefs, bbasis.d)
 pdf("blowfly-fit.pdf", width = 8, height = 5)
 plotfit.fd(blowfly.data.d,times.d,DEfd.fit, main = "Nicholson's Blowfly Model", xlab = "Days", ylab = "Adult Blowfly Counts")
 dev.off()
+
