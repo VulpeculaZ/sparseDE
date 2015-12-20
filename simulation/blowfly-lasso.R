@@ -1,24 +1,13 @@
-source("./R/timevar.R")
-source("./R/tv-delay.R")
-source("./R/simDTVSIRfn.R")
-source("./R/sparse.R")
-source("./R/LS.sparse.R")
-source("./R/poslasso.R")
-source("./R/blowflies.R")
-
-
-library(penalized)
-library(CollocInfer)
-library(nnls)
+library(gpDDE)
 
 args <- commandArgs(TRUE)
 dataRange <- (1 + 25 * as.numeric(args[1])) : (25 * (as.numeric(args[1]) + 1))
-nnls.filename <- paste("blowfly-nnls-500-", as.numeric(args[1]),".RData", sep = "")
-res.filename <- paste("blowfly-lasso-500-", as.numeric(args[1]),".RData", sep = "")
+nnls.filename <- paste("blowfly-nnls-250-", as.numeric(args[1]),".RData", sep = "")
+res.filename <- paste("blowfly-lasso-250-", as.numeric(args[1]),".RData", sep = "")
 dataRange <- (1 + 25 * as.numeric(args[1])) : (25 * (as.numeric(args[1]) + 1))
 
 load(nnls.filename)
-load("data-blowfly-500.RData")
+load("data-blowfly-250.RData")
 
 
 blowfly.day <- seq(0,175, 0.5)
@@ -59,9 +48,9 @@ for(i in 1:length(nnls.res)){
     fdnames=list(NULL,c('y'),NULL)
     DEfd0 <- smooth.basis(times0, blowfly.data,fdPar(bbasis0,1,0.1))
     coefs0 <-  DEfd0$fd$coefs
-    dde.fit <- LS.sparse(blowfliesfn, data =  blowfly.data.d, times.d, basisvals = bbasis.d, lambda = 1000, in.meth='nlminb', delay = delay, basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 1, tau = tau, control.out = list(method = "nnls", maxIter = 10, lambda.sparse = -3), nnls.res = nnls.res[[i]])
+    dde.fit <- LS.sparse(blowfliesfn, data =  blowfly.data.d, times.d, basisvals = bbasis.d, lambda = 1000, in.meth='nlminb', basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 1, tau = tau, control.out = list(method = "nnls.eq", maxIter = 20, selection.method = "lars"), nnls.res = nnls.res[[i]])
     sim.res.adlars[[i]] <- dde.fit$select
-    dde.fit <- LS.sparse(blowfliesfn, data =  blowfly.data.d, times.d, basisvals = bbasis.d, lambda = 1000, in.meth='nlminb', delay = delay, basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 1, tau = tau, control.out = list(method = "nnls", maxIter = 10, lambda.sparse = -4), nnls.res = nnls.res[[i]])
+    dde.fit <- LS.sparse(blowfliesfn, data =  blowfly.data.d, times.d, basisvals = bbasis.d, lambda = 1000, in.meth='nlminb', basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 1, tau = tau, control.out = list(method = "nnls.eq", maxIter = 20, selection.method = "addaptive"), nnls.res = nnls.res[[i]])
     sim.res.lars[[i]] <- dde.fit$select
     save(sim.res.lars, sim.res.adlars, file = res.filename)
 }
