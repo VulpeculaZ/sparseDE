@@ -1,4 +1,5 @@
 library(gpDDE)
+library(spam)
 source("./R/make.blowfly.R")
 ## detach("package:limSolve", unload = TRUE)
 
