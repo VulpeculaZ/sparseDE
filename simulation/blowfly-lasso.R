@@ -49,9 +49,9 @@ for(i in 1:length(nnls.res)){
     fdnames=list(NULL,c('y'),NULL)
     DEfd0 <- smooth.basis(times0, blowfly.data,fdPar(bbasis0,1,0.1))
     coefs0 <-  DEfd0$fd$coefs
-    dde.fit <- sparse.DDE(blowfliesfn, data =  blowfly.data.d, times.d, basisvals = bbasis.d, lambda = 1000, in.meth='nlminb', basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 1, tau = tau, control.out = list(method = "nnls.eq", maxIter = 20, selection.method = "lars"), nnls.res = nnls.res[[i]])
+    try(dde.fit <- sparse.DDE(blowfliesfn, data =  blowfly.data.d, times.d, basisvals = bbasis.d, lambda = 1000, in.meth='nlminb', basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 1, tau = tau, control.out = list(method = "nnls.eq", maxIter = 20, selection.method = "lars"), nnls.res = nnls.res[[i]]))
     sim.res.adlars[[i]] <- dde.fit$select
-    dde.fit <- sparse.DDE(blowfliesfn, data =  blowfly.data.d, times.d, basisvals = bbasis.d, lambda = 1000, in.meth='nlminb', basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 1, tau = tau, control.out = list(method = "nnls.eq", maxIter = 20, selection.method = "addaptive"), nnls.res = nnls.res[[i]])
+    try(dde.fit <- sparse.DDE(blowfliesfn, data =  blowfly.data.d, times.d, basisvals = bbasis.d, lambda = 1000, in.meth='nlminb', basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 1, tau = tau, control.out = list(method = "nnls.eq", maxIter = 20, selection.method = "addaptive"), nnls.res = nnls.res[[i]]))
     sim.res.lars[[i]] <- dde.fit$select
     save(sim.res.lars, sim.res.adlars, file = res.filename)
 }
