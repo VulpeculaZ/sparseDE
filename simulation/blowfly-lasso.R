@@ -1,5 +1,7 @@
 library(gpDDE)
 library(spam)
+source("./R/make.blowfly.R")
+blowfliesfn <- make.blowfly()
 
 args <- commandArgs(TRUE)
 dataRange <- (1 + 25 * as.numeric(args[1])) : (25 * (as.numeric(args[1]) + 1))
