@@ -1,9 +1,6 @@
-source("./R/tv-delay.R")
 source("./R/mDTVSIRfn.R")
-source("./R/sparse.R")
-source("./R/LS.sparse.R")
-library(CollocInfer)
-library(limSolve)
+library(gpDDE)
+library(spam)
 load("data-tv-1d-sd100.RData")
 
 times <- seq(-dtvSIR.pars["tau1"], 5, by = 1/52)
@@ -17,8 +14,8 @@ range.d <- range(knots.d)
 basis0 <- create.bspline.basis(range=range(knots0), nbasis=nbasis0, norder=norder, breaks=knots0)
 basis.d <- create.bspline.basis(range=range.d, nbasis=nbasis.d, norder=norder, breaks=knots.d)
 fdnames=list(NULL,c('S', 'I'),NULL)
-bfdPar0 = fdPar(basis0,lambda=1,int2Lfd(1))
-bfdPar.d <- fdPar(basis.d,lambda=1,int2Lfd(1))
+bfdPar0 = fdPar(basis0,lambda=0.1,int2Lfd(1))
+bfdPar.d <- fdPar(basis.d,lambda=0.1,int2Lfd(1))
 args <- commandArgs(TRUE)
 dataRange <- (1 + 25 * as.numeric(args[1])) : (25 * (as.numeric(args[1]) + 1))
 filename <- paste("nnls-6d-6tv-sd100-", as.numeric(args[1]),".RData", sep = "")
@@ -47,9 +44,11 @@ for(i in 1:length(dataRange)){
     dsirData <- matrix(xout.d, ncol =2, dimnames = list(NULL,c("S", "I")))
     ## Setting initial values
     initPars <- data.res[[dataRange[i]]]$initPars
-    initBeta <- data.res[[dataRange[i]]]$initBeta
-    initKappa <- data.res[[dataRange[i]]]$initKappa
-    dde.fit <- Profile.LS.tv.delay(fn = mDTVSIRfn, dsirData, times.d, pars = initPars, beta = initBeta, kappa = initKappa, coefs = coefs.d, basisvals = basis.d, lambda = 1000, in.meth='nlminb', delay = delay, basisvals0 = basis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 2, tau = list(seq(0, 10/52, by = 2 / 52)), control.out = list(method = "nnls", maxIter = 15, lambda.sparse = 0))
+    initBeta <- rep(1/6,6)
+    initKappa <- rep(0.00375, 6)
+    names(initKappa) <- paste("k", 1:length(initKappa), sep = "")
+    dde.fit <- Profile.LS.TV.DDE(fn = mDTVSIRfn, dsirData, times.d, pars = initPars, beta = initBeta, kappa = initKappa, coefs = coefs.d, basisvals = basis.d, lambda = 1000, in.meth='nlminb', basisvals0 = basis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 2, tau = list(seq(0, 10/52, by = 2 / 52)), control.out = list(method = "nnls.eq", maxIter = 50, echo = TRUE))
+    ## DDEdiag(y = dsirData, times = times.d, dde.fit$fdobj.d)
     nnls.res[[i]] <- dde.fit$res
     save(nnls.res, file =filename)
 }

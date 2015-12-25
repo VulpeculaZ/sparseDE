@@ -442,7 +442,7 @@ cov.one <- function(l){
      coefs <- l$coefs
      DEfd0 <- smooth.basis(times0, blowfly.data,fdPar(bbasis0,1,0.1))
      coefs0 <-  DEfd0$fd$coefs
-     Covar <- ProfileSSE.covariance.delay(pars = pars.hat, beta = beta.hat, active = NULL, fn = blowfliesfn, data = blowfly.data.d, times = times.d,  coefs = coefs, basisvals = bbasis.d, lambda = lambda, in.meth='nlminb', delay = delay, basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(beta.hat), ndelay = 1, tau = tau)
+     Covar <- ProfileSSE.covariance.DDE(pars = pars.hat, beta = beta.hat, active = NULL, fn = blowfliesfn, data = blowfly.data.d, times = times.d,  coefs = coefs, basisvals = bbasis.d, lambda = lambda, in.meth='nlminb', basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(beta.hat), ndelay = 1, tau = tau)
      allpars <- c(pars.hat, beta.hat)
      cover <- ((allpars + 1.96 * sqrt(diag(Covar))) >= c(pars.true, beta.true)) & ((allpars - 1.96 * sqrt(diag(Covar))) <= c(pars.true, beta.true))
      return(list(Covar = Covar, coverage = cover))
@@ -453,7 +453,6 @@ library(parallel)
 system.time(mclapply(nnls.res.all[1:50], cov.one, mc.cores = 25))
 system.time(lapply(nnls.res.all[1:2], cov.one))
 cov.all <- mclapply(nnls.res.all[1:50], cov.one, mc.cores = 25)
-
 
 ##################################################
 ## LASSO and ad-lars
@@ -616,16 +615,10 @@ library(reshape2)
 library(ggplot2)
 colnames(beta.hat) <- paste("beta", 1:10, sep = ".")
 beta.df <- melt(as.data.frame(beta.hat))
+pdf(file = "blowfly-250.pdf", width = 9,height = 5)
 ggplot(beta.df ,aes(x = variable,y = value))  + geom_boxplot()
-
+dev.off()
 ## Confidence interval estimation
-load("data-blowfly-250.RData")
-library(CollocInfer)
-library(MASS)
-source("./R/blowflies.R")
-source("./R/sparse.R")
-source("./R/LS.sparse.R")
-source("./R/tv-delay-cov.R")
 
 blowfly.day <- seq(0,175, 0.5)
 rr     = range(blowfly.day)       #  the range of observations times
@@ -647,7 +640,7 @@ fdnames=list(NULL,c('y'),NULL)
 lambda <- 1000
 tau <- list(seq(5.5,10,0.5))
 
-
+load("data-blowfly-250.RData")
 nnls.res.all <- list()
 for(i in 0:19){
     load(paste("blowfly-nnls-250-", i, ".RData", sep=""))
@@ -657,10 +650,20 @@ for(i in 0:19){
     nnls.res.all <- c(nnls.res.all, nnls.res)
 }
 
+tmp <- cov.one(nnls.res.all[[1]])
+
 library(parallel)
-system.time(cov.all <- mclapply(nnls.res.all, cov.one, mc.cores = 30, mc.preschedule = FALSE))
+cov.all <- mclapply(nnls.res.all[1:2], cov.one, mc.preschedule = FALSE)
+save.image()
 
 coverage <- c()
 for(i in 1:length(cov.all)){
     try(coverage <- rbind(coverage, cov.all[[i]]$coverage))
 }
+
+
+## > colMeans(coverage)
+##       c        a       N0  beta1.1  beta1.2  beta1.3  beta1.4  beta1.5
+##   1.000    0.988    0.988    1.000    1.000    1.000    1.000    1.000
+## beta1.6  beta1.7  beta1.8  beta1.9 beta1.10
+##   1.000    1.000    1.000    1.000    1.000
