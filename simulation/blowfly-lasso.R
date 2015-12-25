@@ -5,12 +5,12 @@ blowfliesfn <- make.blowfly()
 
 args <- commandArgs(TRUE)
 dataRange <- (1 + 25 * as.numeric(args[1])) : (25 * (as.numeric(args[1]) + 1))
-nnls.filename <- paste("blowfly-nnls-500-", as.numeric(args[1]),".RData", sep = "")
-res.filename <- paste("blowfly-lasso-500-", as.numeric(args[1]),".RData", sep = "")
+nnls.filename <- paste("blowfly-nnls-1000-", as.numeric(args[1]),".RData", sep = "")
+res.filename <- paste("blowfly-lasso-1000-", as.numeric(args[1]),".RData", sep = "")
 dataRange <- (1 + 25 * as.numeric(args[1])) : (25 * (as.numeric(args[1]) + 1))
 
 load(nnls.filename)
-load("data-blowfly-500.RData")
+load("data-blowfly-1000.RData")
 
 
 blowfly.day <- seq(0,175, 0.5)
