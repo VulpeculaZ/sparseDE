@@ -1,7 +1,7 @@
 source("./R/mDTVSIRfn.R")
 library(gpDDE)
 library(spam)
-load("data-tv-1d-sd200.RData")
+load("data-tv-1d-sd50.RData")
 
 times <- seq(-dtvSIR.pars["tau1"], 5, by = 1/52)
 times0 <- knots0 <- times[times >= 0.5]
@@ -18,13 +18,13 @@ bfdPar0 = fdPar(basis0,lambda=0.1,int2Lfd(1))
 bfdPar.d <- fdPar(basis.d,lambda=0.1,int2Lfd(1))
 args <- commandArgs(TRUE)
 dataRange <- (1 + 25 * as.numeric(args[1])) : (25 * (as.numeric(args[1]) + 1))
-filename <- paste("nnls-6d-6tv-sd200-", as.numeric(args[1]),".RData", sep = "")
+filename <- paste("nnls-6d-6tv-sd50-", as.numeric(args[1]),".RData", sep = "")
 
 begTime <- Sys.time()
 nnls.res <- list()
 for(i in 1:length(dataRange)){
     print(dataRange[i])
-    print(200)
+    print(50)
     ## points(times, xout)
     xout0 <- data.res[[dataRange[i]]]$xout[times >= 0.5,]
     xout.d <- data.res[[dataRange[i]]]$xout[times >= 1,]

@@ -32,8 +32,8 @@ data.res <- list()
 for(i in 1:500){
     xout <- c()
     data.res[[i]] <- list()
-    xout <- cbind(xout, yout[,2] + rnorm(length(yout[,2]), sd = 200))
-    xout <- cbind(xout, yout[,3] + rnorm(length(yout[,2]), sd = 200))
+    xout <- cbind(xout, yout[,2] + rnorm(length(yout[,2]), sd = 50))
+    xout <- cbind(xout, yout[,3] + rnorm(length(yout[,2]), sd = 50))
     ## points(times, xout)
     ## xout0 <- xout[times >= 0,]
     data.res[[i]]$xout <- xout
@@ -43,4 +43,4 @@ for(i in 1:500){
 }
 
 curseed <- get(".Random.seed", .GlobalEnv)
-save(data.res, dtvSIR.pars, curseed, file = "data-tv-1d-sd200.RData")
+save(data.res, dtvSIR.pars, curseed, file = "data-tv-1d-sd50.RData")
