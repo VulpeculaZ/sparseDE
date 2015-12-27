@@ -8,7 +8,7 @@ args.script <- commandArgs(TRUE)
 dataRange <- (1 + 25 * as.numeric(args.script[1])) : (25 * (as.numeric(args.script[1]) + 1))
 nnls.filename <- paste("nnls-6d-6tv-sd100-", as.numeric(args.script[1]),".RData", sep = "")
 res.filename <- paste("tv-lasso-6d-6tv-sd100-", as.numeric(args.script[1]),".RData", sep = "")
-dataRange <- (1 + 25 * as.numeric(args[1])) : (25 * (as.numeric(args.script[1]) + 1))
+dataRange <- (1 + 25 * as.numeric(args.script[1])) : (25 * (as.numeric(args.script[1]) + 1))
 
 load(nnls.filename)
 load("data-tv-1d-sd100.RData")
