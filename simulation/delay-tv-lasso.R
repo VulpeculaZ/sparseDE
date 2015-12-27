@@ -1,18 +1,14 @@
-source("./R/timevar.R")
-source("./R/tv-delay.R")
-source("./R/simDTVSIRfn.R")
-source("./R/sparse.R")
-source("./R/LS.sparse.R")
+source("./R/mDTVSIRfn.R")
+library(gpDDE)
+library(spam)
 
-library(penalized)
-library(CollocInfer)
-library(nnls)
 
-args <- commandArgs(TRUE)
-dataRange <- (1 + 25 * as.numeric(args[1])) : (25 * (as.numeric(args[1]) + 1))
-nnls.filename <- paste("nnls-6d-6tv-sd100-", as.numeric(args[1]),".RData", sep = "")
-res.filename <- paste("tv-lasso-6d-6tv-sd100-", as.numeric(args[1]),".RData", sep = "")
-dataRange <- (1 + 25 * as.numeric(args[1])) : (25 * (as.numeric(args[1]) + 1))
+
+args.script <- commandArgs(TRUE)
+dataRange <- (1 + 25 * as.numeric(args.script[1])) : (25 * (as.numeric(args.script[1]) + 1))
+nnls.filename <- paste("nnls-6d-6tv-sd100-", as.numeric(args.script[1]),".RData", sep = "")
+res.filename <- paste("tv-lasso-6d-6tv-sd100-", as.numeric(args.script[1]),".RData", sep = "")
+dataRange <- (1 + 25 * as.numeric(args[1])) : (25 * (as.numeric(args.script[1]) + 1))
 
 load(nnls.filename)
 load("data-tv-1d-sd100.RData")
@@ -39,16 +35,16 @@ bfdPar.d <- fdPar(basis.d,lambda=1,int2Lfd(1))
 set.seed(42)
 sim.res <- list()
 for(i in 1:length(nnls.res)){
-    print(dataRange[i])
+    print(c(dataRange[i], 100))
     initPars <- nnls.res[[i]]$pars
-    initBeta <- nnls.res[[i]]$conv$pars.kappa.beta[dim(nnls.res[[i]]$conv$pars.kappa.beta)[1], 8:13]
+    initBeta <- nnls.res[[i]]$beta
     initKappa <- nnls.res[[i]]$kappa
     xout0 <- data.res[[dataRange[i]]]$xout[times >= 0.5,]
     xout.d <- data.res[[dataRange[i]]]$xout[times >= 1,]
     DEfd0 <- smooth.basis(knots0, xout0, bfdPar0,fdnames=fdnames)$fd
     coefs0 <- DEfd0$coefs
     nnls.resi <- nnls.res[[i]]
-    res.tv.delay <- sparse.tv.delay(fn = mDTVSIRfn, xout.d, times = times.d, pars = initPars, beta = initBeta, kappa = initKappa, basisvals = basis.d, lambda = 1000, in.meth='nlminb',  delay = delay, basisvals0 = basis0, coefs0 = coefs0, control.out = list(method = "fused", maxIter = 10, lambda.sparse = -1), nbeta = length(initBeta), ndelay = 2, tau = list(seq(0, 10/52, by = 2 / 52)), nnls.res = nnls.res[[i]])
+    try(res.tv.delay <- sparse.TV.DDE(fn = mDTVSIRfn, xout.d, times = times.d, basisvals = basis.d, lambda = 1000, in.meth='nlminb', basisvals0 = basis0, coefs0 = coefs0, control.out = list(maxIter = 20, selection.method = "penalized"), nbeta = length(initBeta), ndelay = 2, tau = list(seq(0, 10/52, by = 2 / 52)), nnls.res = nnls.res[[i]]))
     sim.res[[i]] <- res.tv.delay
     save(sim.res, file = res.filename)
 }
