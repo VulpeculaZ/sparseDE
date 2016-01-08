@@ -6,12 +6,12 @@ library(spam)
 
 args.script <- commandArgs(TRUE)
 dataRange <- (1 + 25 * as.numeric(args.script[1])) : (25 * (as.numeric(args.script[1]) + 1))
-nnls.filename <- paste("nnls-6d-6tv-sd100-", as.numeric(args.script[1]),".RData", sep = "")
-res.filename <- paste("tv-lasso-6d-6tv-sd100-", as.numeric(args.script[1]),".RData", sep = "")
+nnls.filename <- paste("nnls-6d-6tv-sd50-", as.numeric(args.script[1]),".RData", sep = "")
+res.filename <- paste("tv-lasso-6d-6tv-sd50-", as.numeric(args.script[1]),".RData", sep = "")
 dataRange <- (1 + 25 * as.numeric(args.script[1])) : (25 * (as.numeric(args.script[1]) + 1))
 
 load(nnls.filename)
-load("data-tv-1d-sd100.RData")
+load("data-tv-1d-sd50.RData")
 
 tau <- 8/52
 times <- seq(-dtvSIR.pars["tau1"], 5, by = 1/52)
