@@ -22,7 +22,7 @@ pars.true <- 10
 kappa.true <- c(rep(0.005,3), rep(0.0025,3))
 
 for(i in 1:19){
-    load(paste("tv-lasso-6d-6tv-sd100-", i, ".RData", sep=""))
+    load(paste("tv-lasso-6d-6tv-sd50-", i, ".RData", sep=""))
     for(j in 1:25){
         pars.pen <- c(pars.pen, sim.res[[j]]$select$pars.pen)
         beta.pen <- rbind(beta.pen, sim.res[[j]]$select$beta.pen)
@@ -42,6 +42,12 @@ fdp
 fnp <- sum(kappa.pen[,3]-kappa.pen[,4] == 0) / dim(kappa.pen)[1]
 fnp
 colMeans(kappa.pen)
+
+mean(kappa.pen[,1:3])
+sd(kappa.pen[,1:3])
+mean(kappa.pen[,4:6])
+sd(kappa.pen[,4:6])
+
 
 library(reshape2)
 library(ggplot2)
@@ -99,6 +105,12 @@ fnp
 
 colMeans(kappa.hat)
 
+
+mean(kappa.hat[,1:3])
+sd(kappa.hat[,1:3])
+mean(kappa.hat[,4:6])
+sd(kappa.hat[,4:6])
+
 library(reshape2)
 library(ggplot2)
 colnames(beta.hat) <- paste("beta", 1:6, sep = ".")
@@ -112,6 +124,8 @@ kappa.df <- melt(as.data.frame(kappa.hat))
 pdf(file = "nnls-6d-6tv-kappa.pdf", width = 9,height = 5)
 ggplot(kappa.df, aes(x = variable,y = value))  + geom_boxplot()
 dev.off()
+
+
 
 ##################################################
 ## Parse 100 nnls fitting results of estimating time varying coefficients

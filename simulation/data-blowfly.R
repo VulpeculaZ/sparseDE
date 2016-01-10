@@ -2,16 +2,20 @@ library(CollocInfer)
 library(deSolve)
 
 blowfly.gen <- function(t, y, parms){
-    if(t<0)
-        lag <- 1000
-    else
-        lag <- lagvalue(t - parms["tau"])
+    lag <- rep(1000, 10)
+    for(i in 1:10){
+        if(t>0)
+            lag[i] <- lagvalue(t - 8)
+    }
+    lag <- mean(lag)
     dy <- parms["c"] * lag * exp(-lag / parms["N0"]) - parms["a"] * y
     list(dy, dy = dy)
 }
 
-blowfly.pars <- c(150 / 8, 8 / 8 , 1000, 8)
-names(blowfly.pars) <- c("c", "a", "N0", "tau")
+
+blowfly.pars <- c(150 / 8, 8 / 8 , 1000)
+names(blowfly.pars) <- c("c", "a", "N0")
+blowfly.pars <- c(blowfly.pars, seq(7.75, 8.25, length.out = 11))
 times <- seq(-10, 200, by = 0.5)
 yout <- dede(y = 1000, times = times, func = blowfly.gen, parms = blowfly.pars, atol = 1e-7)
 ## plot(yout[55:405,], which = 1, type = "l", lwd = 2, main = "Nicholson's Blowflies Model")
@@ -30,4 +34,4 @@ for(i in 1:5){
 }
 
 curseed <- get(".Random.seed", .GlobalEnv)
-save(data.res, blowfly.pars, curseed, file = "data-blowfly-250.RData")
+save(data.res, blowfly.pars, curseed, file = "data-blowfly-250-dist.RData")

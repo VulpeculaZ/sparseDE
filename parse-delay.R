@@ -573,11 +573,12 @@ for(i in 0:19){
 library(parallel)
 system.time(cov.all <- mclapply(nnls.res.all, cov.one, mc.cores = 30, mc.preschedule = FALSE))
 
+load("parse-cov-1000.RData")
 coverage <- c()
 for(i in 1:length(cov.all)){
     try(coverage <- rbind(coverage, cov.all[[i]]$coverage))
 }
-
+colMeans(coverage)
 
 ##################################################
 ## Parse 500 nnls fitting results of blowfly simulation, sd = 250
@@ -656,6 +657,7 @@ library(parallel)
 cov.all <- mclapply(nnls.res.all[1:2], cov.one, mc.preschedule = FALSE)
 save.image()
 
+load("parse-cov-250.RData")
 coverage <- c()
 for(i in 1:length(cov.all)){
     try(coverage <- rbind(coverage, cov.all[[i]]$coverage))
