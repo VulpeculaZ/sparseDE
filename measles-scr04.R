@@ -1,9 +1,5 @@
-source("./R/tv-delay.R")
 source("./R/mDTVtrendSIRfn.R")
-source("./R/mDTVSIRfn.R")
-source("./R/sparse.R")
-source("./R/LS.sparse.R")
-
+library(gpDDE)
 library(penalized)
 library(CollocInfer)
 library(limSolve)
@@ -101,12 +97,12 @@ mKappa <- rep(2e-3, 12)
 names(mKappa) <- c("k1", "k2", "k3","k4","k5","k6","k7","k8","k9","k10","k11", "k12")
 
 
-coefsS <- init.unob.LS.tv.delay(mDTVSIRfn, mData.d, times.d, pars = mPars, kappa = mKappa, coefs = coefs.d, beta = initBeta, basisvals = bbasis.d, lambda = c(lambda1,lambda2), more = list(b = procB), in.meth='nlminb', control.out = list(method = "nnls", maxIter = 10, lambda.sparse = 0, echo = TRUE), delay = delay, basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 2, tau = list(seq(0,6/52, 1/52)), unob = 1)
+coefsS <- gpDDE:::init.unob.LS.tv.delay(mDTVSIRtrfn, mData.d, times.d, pars = mPars, kappa = mKappa, coefs = coefs.d, beta = initBeta, basisvals = bbasis.d, lambda = c(lambda1,lambda2), more = list(b = procB), in.meth='nlminb', control.out = list(method = "nnls", maxIter = 10, lambda.sparse = 0, echo = TRUE), delay = delay, basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 2, tau = list(seq(0,6/52, 1/52)), unob = 1)
 coefs.d[, 1] <- coefsS$coefficients
 
 
 
 ## debug(Profile.LS.tv)
-tv.fit <- Profile.LS.tv.delay(mDTVSIRtrfn, mData.d, times.d, pars = mPars, kappa = mKappa, coefs = coefs.d, beta = initBeta, basisvals = bbasis.d, lambda = c(lambda1,lambda2), more = list(b = procB), in.meth='nlminb', control.out = list(method = "nnls", maxIter = 10, lambda.sparse = 0, echo = TRUE), delay = delay, basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 2, tau = list(seq(0,6/52, 1/52)))
+tv.fit <- Profile.LS.TV.DDE(mDTVSIRtrfn, mData.d, times.d, pars = mPars, kappa = mKappa, coefs = coefs.d, beta = initBeta, basisvals = bbasis.d, lambda = c(lambda1,lambda2), more = list(b = procB), in.meth='nlminb', control.out = list(method = "nnls.eq", maxIter = 10, lambda.sparse = 0, echo = TRUE), basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 2, tau = list(seq(0,6/52, 1/52)))
 
 save(tv.fit, lambda1, lambda2, file = paste("mfit04-",lambda1,lambda2,".RData", sep=""))

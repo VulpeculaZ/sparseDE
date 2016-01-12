@@ -62,9 +62,15 @@ mDTVSIRtrfn$dfdp <- function (t, y, p, more)
     r[,"I", "pho1"] = t
     month <- t %% 1
     nKappa <- more$nKappa
-    for(i in 1 : nKappa){
-        r[ , "S", paste("k", i, sep ="")][month  >= (i-1)/nKappa & month < i /nKappa] = - (yi.d * y[, "S"])[month  >= (i-1)/nKappa & month < i /nKappa]
-        r[ , "I", paste("k", i, sep ="")][month  >= (i-1)/nKappa & month < i /nKappa] = (yi.d * y[, "S"])[month  >= (i-1)/nKappa & month < i /nKappa]
+    r[ , "S", "k1"][month  >= (nKappa-1)/nKappa & month < 1] = -(yi.d * y[, "S"] * month)[month  >= (nKappa-1)/nKappa & month < 1]
+    r[ , "S", "k1"][month  >= 0 & month < 1/nKappa] = -(yi.d * y[, "S"] * (1 - month))[month  >= 0 & month < 1/nKappa]
+    r[ , "I", "k1"][month  >= (nKappa-1)/nKappa & month < 1] = (yi.d * y[, "S"] * month)[month  >= (nKappa-1)/nKappa & month < 1]
+    r[ , "I", "k1"][month  >= (i-1)/nKappa & month < i/nKappa] = (yi.d * y[, "S"] * (1 - month))[month  >= 0 & month < 1/nKappa]
+    for(i in 2 : nKappa){
+        r[ , "S", paste("k", i, sep ="")][month  >= (i-2)/nKappa & month < (i-1)/nKappa] = -(yi.d * y[, "S"] * month)[month  >= (i-2)/nKappa & month < (i-1) /nKappa]
+        r[ , "S", paste("k", i, sep ="")][month  >= (i-1)/nKappa & month < i/nKappa] = -(yi.d * y[, "S"] * (1 - month))[month  >= (i-1)/nKappa & month < i/nKappa]
+        r[ , "I", paste("k", i, sep ="")][month  >= (i-2)/nKappa & month < (i-1)/nKappa] = (yi.d * y[, "S"] * month)[month  >= (i-2)/nKappa & month < (i-1) /nKappa]
+        r[ , "I", paste("k", i, sep ="")][month  >= (i-1)/nKappa & month < i/nKappa] = (yi.d * y[, "S"] * (1 - month))[month  >= (i-1)/nKappa & month < i/nKappa]
     }
     return(r)
 }
@@ -86,9 +92,16 @@ mDTVSIRtrfn$d2fdxdp <- function (t, y, p, more)
     r[, "I", "I", "gamma"] = -1
     month <- t %% 1
     nKappa <- more$nKappa
-    for(i in 1:nKappa){
-        r[ , "S", "S", paste("k", i, sep ="")][month  >= (i-1)/nKappa & month < i /nKappa] = - yi.d[month  >= (i-1)/nKappa & month < i /nKappa]
-        r[ , "I", "S", paste("k", i, sep ="")][month  >= (i-1)/nKappa & month < i /nKappa] = yi.d[month  >= (i-1)/nKappa & month < i /nKappa]
+
+    r[ , "S", "S", "k1"][month  >= (nKappa-1)/nKappa & month < 1] = -(yi.d * month)[month  >= (nKappa-1)/nKappa & month < 1]
+    r[ , "S", "S","k1"][month  >= 0 & month < 1/nKappa] = -(yi.d * (1 - month))[month  >= 0 & month < 1/nKappa]
+    r[ , "I", "S", "k1"][month  >= (nKappa-1)/nKappa & month < 1] = (yi.d * month)[month  >= (nKappa-1)/nKappa & month < 1]
+    r[ , "I", "S", "k1"][month  >= (i-1)/nKappa & month < i/nKappa] = (yi.d * (1 - month))[month  >= 0 & month < 1/nKappa]
+    for(i in 2 : nKappa){
+        r[ , "S", "S", paste("k", i, sep ="")][month  >= (i-2)/nKappa & month < (i-1)/nKappa] = -(yi.d * month)[month  >= (i-2)/nKappa & month < (i-1) /nKappa]
+        r[ , "S", "S", paste("k", i, sep ="")][month  >= (i-1)/nKappa & month < i/nKappa] = -(yi.d * (1 - month))[month  >= (i-1)/nKappa & month < i/nKappa]
+        r[ , "I", "S", paste("k", i, sep ="")][month  >= (i-2)/nKappa & month < (i-1)/nKappa] = (yi.d * month)[month  >= (i-2)/nKappa & month < (i-1) /nKappa]
+        r[ , "I", "S", paste("k", i, sep ="")][month  >= (i-1)/nKappa & month < i/nKappa] = (yi.d * (1 - month))[month  >= (i-1)/nKappa & month < i/nKappa]
     }
     return(r)
 }
@@ -102,9 +115,16 @@ mDTVSIRtrfn$d2fdx.ddp <- function (t, y, p, more)
     dimnames(r) = list(NULL, colnames(y), colnames(y), names(p))
     month <- t %% 1
     nKappa <- more$nKappa
-    for(i in 1:nKappa){
-        r[ , "S", "I", paste("k", i, sep ="")][month  >= (i-1)/nKappa & month < i /nKappa] = - y[,"S"][month  >= (i-1)/nKappa & month < i /nKappa]
-        r[ , "I", "I", paste("k", i, sep ="")][month  >= (i-1)/nKappa & month < i /nKappa] = y[,"S"][month  >= (i-1)/nKappa & month < i /nKappa]
+
+    r[ , "S", "I", "k1"][month  >= (nKappa-1)/nKappa & month < 1] = -(y[, "S"] * month)[month  >= (nKappa-1)/nKappa & month < 1]
+    r[ , "S", "I", "k1"][month  >= 0 & month < 1/nKappa] = -(y[, "S"] * (1 - month))[month  >= 0 & month < 1/nKappa]
+    r[ , "I", "I", "k1"][month  >= (nKappa-1)/nKappa & month < 1] = (y[, "S"] * month)[month  >= (nKappa-1)/nKappa & month < 1]
+    r[ , "I", "I", "k1"][month  >= (i-1)/nKappa & month < i/nKappa] = (y[, "S"] * (1 - month))[month  >= 0 & month < 1/nKappa]
+    for(i in 2 : nKappa){
+        r[ , "S", "I", paste("k", i, sep ="")][month  >= (i-2)/nKappa & month < (i-1)/nKappa] = -(y[, "S"] * month)[month  >= (i-2)/nKappa & month < (i-1) /nKappa]
+        r[ , "S", "I", paste("k", i, sep ="")][month  >= (i-1)/nKappa & month < i/nKappa] = -(y[, "S"] * (1 - month))[month  >= (i-1)/nKappa & month < i/nKappa]
+        r[ , "I", "I", paste("k", i, sep ="")][month  >= (i-2)/nKappa & month < (i-1)/nKappa] = (y[, "S"] * month)[month  >= (i-2)/nKappa & month < (i-1) /nKappa]
+        r[ , "I", "I", paste("k", i, sep ="")][month  >= (i-1)/nKappa & month < i/nKappa] = (y[, "S"] * (1 - month))[month  >= (i-1)/nKappa & month < i/nKappa]
     }
     return(r)
 }
