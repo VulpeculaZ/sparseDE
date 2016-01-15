@@ -11,7 +11,7 @@ res.filename <- paste("tv-lasso-6d-6tv-sd200-", as.numeric(args.script[1]),".RDa
 dataRange <- (1 + 25 * as.numeric(args.script[1])) : (25 * (as.numeric(args.script[1]) + 1))
 
 load(nnls.filename)
-load("data-tv-1d-sd200y.RData")
+load("data-tv-1d-sd200.RData")
 
 tau <- 8/52
 times <- seq(-dtvSIR.pars["tau1"], 5, by = 1/52)

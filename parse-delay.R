@@ -82,9 +82,9 @@ for(i in 0:19){
 }
 
 cat("nnls")
-fdp <- sum(beta.hat[,-c(7,8)] != 0) / length(beta.hat[,-c(7,8)])
+fdp <- sum(beta.hat[,-c(7,8)] != 0) / sum(beta.hat != 0)
 print(fdp)
-fnp <- sum(beta.hat[,c(7,8)] == 0) / length(beta.hat[,c(7,8)])
+fnp <- sum(beta.hat[,c(7,8)] == 0) / sum(beta.hat == 0)
 print(fnp)
 
 library(reshape2)
@@ -117,11 +117,13 @@ for(i in 0:19){
     }
 }
 
+
 cat("pen \n")
-fdp <- sum(beta.hat[,-c(7,8)] != 0) / length(beta.hat[,-c(7,8)])
+fdp <- sum(beta.hat[,-c(7,8)] != 0) / sum(beta.hat != 0)
 print(fdp)
-fnp <- sum(beta.hat[,c(7,8)] == 0) / length(beta.hat[,c(7,8)])
+fnp <- sum(beta.hat[,c(7,8)] == 0) / sum(beta.hat == 0)
 print(fnp)
+
 colMeans(beta.hat)
 sum(colMeans(beta.hat))
 mean(pars.hat)
@@ -157,10 +159,11 @@ for(i in 0:19){
 }
 
 cat("Adaptive LASSO \n")
-fdp <- sum(beta.hat[,-c(7,8)] != 0) / length(beta.hat[,-c(7,8)])
+fdp <- sum(beta.hat[,-c(7,8)] != 0) / sum(beta.hat != 0)
 print(fdp)
-fnp <- sum(beta.hat[,c(7,8)] == 0) / length(beta.hat[,c(7,8)])
+fnp <- sum(beta.hat[,c(7,8)] == 0) / sum(beta.hat == 0)
 print(fnp)
+
 colMeans(beta.hat)
 sum(colMeans(beta.hat))
 mean(pars.hat)
@@ -196,10 +199,11 @@ for(i in 0:19){
 }
 
 cat("nnls")
-fdp <- sum(beta.hat[,-c(7,8)] != 0) / length(beta.hat[,-c(7,8)])
+fdp <- sum(beta.hat[,-c(7,8)] != 0) / sum(beta.hat != 0)
 print(fdp)
-fnp <- sum(beta.hat[,c(7,8)] == 0) / length(beta.hat[,c(7,8)])
+fnp <- sum(beta.hat[,c(7,8)] == 0) / sum(beta.hat == 0)
 print(fnp)
+
 colMeans(beta.hat)
 sum(colMeans(beta.hat))
 mean(pars.hat)
@@ -260,10 +264,11 @@ for(i in 0:19){
 }
 
 cat("pen\n")
-fdp <- sum(beta.hat[,-c(7,8)] != 0) / length(beta.hat[,-c(7,8)])
+fdp <- sum(beta.hat[,-c(7,8)] != 0) / sum(beta.hat != 0)
 print(fdp)
-fnp <- sum(beta.hat[,c(7,8)] == 0) / length(beta.hat[,c(7,8)])
+fnp <- sum(beta.hat[,c(7,8)] == 0) / sum(beta.hat == 0)
 print(fnp)
+
 colMeans(beta.hat)
 sum(colMeans(beta.hat))
 mean(pars.hat)
@@ -300,10 +305,11 @@ for(i in 0:19){
 }
 
 cat("Adaptive LASSO\n")
-fdp <- sum(beta.hat[,-c(7,8)] != 0) / length(beta.hat[,-c(7,8)])
+fdp <- sum(beta.hat[,-c(7,8)] != 0) / sum(beta.hat != 0)
 print(fdp)
-fnp <- sum(beta.hat[,c(7,8)] == 0) / length(beta.hat[,c(7,8)])
+fnp <- sum(beta.hat[,c(7,8)] == 0) / length(beta.hat == 0)
 print(fnp)
+
 colMeans(beta.hat)
 sum(colMeans(beta.hat))
 mean(pars.hat)
@@ -669,3 +675,9 @@ for(i in 1:length(cov.all)){
 ##   1.000    0.988    0.988    1.000    1.000    1.000    1.000    1.000
 ## beta1.6  beta1.7  beta1.8  beta1.9 beta1.10
 ##   1.000    1.000    1.000    1.000    1.000
+
+fdpfnp <- function(fd, fn){
+    fdp <- fd * 9 / (fd * 9 + 1 - fn)
+    fnp <- fn / ((1 - fd) * 9 + fn)
+    c(fdp, fnp)
+}

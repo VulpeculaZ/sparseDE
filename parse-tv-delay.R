@@ -22,7 +22,7 @@ pars.true <- 10
 kappa.true <- c(rep(0.005,3), rep(0.0025,3))
 
 for(i in 1:19){
-    load(paste("tv-lasso-6d-6tv-sd50-", i, ".RData", sep=""))
+    load(paste("tv-lasso-6d-6tv-sd100-", i, ".RData", sep=""))
     for(j in 1:25){
         pars.pen <- c(pars.pen, sim.res[[j]]$select$pars.pen)
         beta.pen <- rbind(beta.pen, sim.res[[j]]$select$beta.pen)
@@ -31,15 +31,15 @@ for(i in 1:19){
 }
 
 cat("lasso and fused lasso")
-fdp <- sum(beta.pen[,-c(6)] != 0) / length(beta.pen[,-c(5)])
+fdp <- sum(beta.pen[,-c(6)] != 0) / sum(beta.pen != 0)
 print(fdp)
-fnp <- sum(beta.pen[,c(6)] == 0) / length(beta.pen[,c(5)])
+fnp <- sum(beta.pen[,c(6)] == 0) / sum(beta.pen == 0)
 print(fnp)
 colMeans(beta.pen)
 
-fdp <- sum((kappa.pen[,-6] - kappa.pen[,-1])[,-3] != 0 ) / length((kappa.pen[,-6] - kappa.pen[,-1])[,-3])
+fdp <- sum((kappa.pen[,-6] - kappa.pen[,-1])[,-3] != 0 ) / sum((kappa.pen[,-6] - kappa.pen[,-1]) != 0)
 fdp
-fnp <- sum(kappa.pen[,3]-kappa.pen[,4] == 0) / dim(kappa.pen)[1]
+fnp <- sum(kappa.pen[,3]-kappa.pen[,4] == 0) / sum((kappa.pen[,-6] - kappa.pen[,-1]) == 0)
 fnp
 colMeans(kappa.pen)
 
