@@ -19,7 +19,7 @@ mDTVSIRtrfn$fn <- function (t, y, p, more)
     pk <- p[(length(p) - more$nKappa + 1):length(p)]
     phot <- p["pho0"] + t * p["pho1"]
     b <- more$b
-    r[, "S"] =  phot - tvtrans(t, pk) * yi.d * y[, "S"] + b ## * p["alpha"]
+    r[, "S"] =   - tvtrans(t, pk) * yi.d * y[, "S"] + b - phot ## * p["alpha"]
     r[, "I"] =  tvtrans(t, pk) * yi.d * y[, "S"] - p["gamma"] * y[, "I"]
     return(r)
 }
@@ -58,8 +58,8 @@ mDTVSIRtrfn$dfdp <- function (t, y, p, more)
     dimnames(r) = list(NULL, colnames(y), names(p))
     ## r[ , "S", "alpha"] = b
     r[, "I", "gamma"] = - y[, "I"]
-    r[,"I", "pho0"] = 1
-    r[,"I", "pho1"] = t
+    r[,"I", "pho0"] = -1
+    r[,"I", "pho1"] = -t
     month <- t %% 1
     nKappa <- more$nKappa
     r[ , "S", "k1"][month  >= (nKappa-1)/nKappa & month < 1] = -(yi.d * y[, "S"] * month)[month  >= (nKappa-1)/nKappa & month < 1]

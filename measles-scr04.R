@@ -85,12 +85,12 @@ for(i in 1:length(procTimes)){
 #  run LS.setup
 
 args <- commandArgs(TRUE)
-lambda1 <- 10^(as.numeric(args[1]) %/% 4) / 1000
-lambda2 <- 10^(as.numeric(args[1]) %% 4) / 1000
+lambda1 <- 10^(as.numeric(args[1]) %/% 4)
+lambda2 <- 10^(as.numeric(args[1]) %% 4)
 
-initBeta <- rep(0, 7)
-initBeta[1:2] <- 0.5
-mPars <- c(mean(procB) / mean(mData.d[,2]), 0, 0)
+initBeta <- rep(1/7, 7)
+
+mPars <- c(mean(procB) / mean(mData.d[,2]), 0, 400)
 names(mPars) <- c("gamma", "pho0", "pho1")
 mKappa <- rep(2e-3, 12)
 #mKappa[c(6,7,8)] <- 1e-3
@@ -105,4 +105,9 @@ coefs.d[, 1] <- coefsS$coefficients
 ## debug(Profile.LS.tv)
 tv.fit <- Profile.LS.TV.DDE(mDTVSIRtrfn, mData.d, times.d, pars = mPars, kappa = mKappa, coefs = coefs.d, beta = initBeta, basisvals = bbasis.d, lambda = c(lambda1,lambda2), more = list(b = procB), in.meth='nlminb', control.out = list(method = "nnls.eq", maxIter = 10, lambda.sparse = 0, echo = TRUE), basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 2, tau = list(seq(0,6/52, 1/52)))
 
-save(tv.fit, lambda1, lambda2, file = paste("mfit04-",lambda1,lambda2,".RData", sep=""))
+save(tv.fit, lambda1, lambda2, file = paste("mfit04-nnls",lambda1,lambda2,".RData", sep=""))
+
+
+res.tv.delay <- sparse.TV.DDE(fn = mDTVSIRtrfn, mData.d, times = times.d, basisvals = bbasis.d, lambda = c(lambda1,lambda2), more = list(b = procB), in.meth='nlminb', basisvals0 = bbasis0, coefs0 = coefs0, control.out = list(maxIter = 1, selection.method = "penalized"), nbeta = 7, ndelay = 2, tau = list(seq(0,6/52, 1/52)), nnls.res = tv.fit$res)
+
+save(res.tv.delay, lambda1, lambda2, file = paste("mfit04-lasso",lambda1,lambda2,".RData", sep=""))
