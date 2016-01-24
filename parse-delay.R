@@ -89,10 +89,10 @@ print(fnp)
 
 library(reshape2)
 library(ggplot2)
-colnames(beta.hat) <- paste("beta", 1:16, sep = ".")
+colnames(beta.hat) <- round(seq(0,5, length.out = 16), digits =2)
 beta.df <- melt(as.data.frame(beta.hat))
 pdf(file = "nnls-16d-adj.pdf", width = 9,height = 5)
-ggplot(beta.df ,aes(x = variable,y = value))  + geom_boxplot()
+ggplot(beta.df ,aes(x = variable,y = value))  + geom_boxplot() + ylab(expression(hat(beta)[GP])) + xlab(expression(tau))
 dev.off()
 
 ##################################################
@@ -129,13 +129,14 @@ sum(colMeans(beta.hat))
 mean(pars.hat)
 sd(pars.hat)
 
-library(reshape2)
-library(ggplot2)
-colnames(beta.hat) <- paste("beta", 1:16, sep = ".")
+#library(reshape2)
+#library(ggplot2)
+colnames(beta.hat) <- round(seq(0,5, length.out = 16), digits =2)
 beta.df <- melt(as.data.frame(beta.hat))
 pdf(file = "pen-16d-adj.pdf", width = 9,height = 5)
-ggplot(beta.df ,aes(x = variable,y = value))  + geom_boxplot()
+ggplot(beta.df ,aes(x = variable,y = value))  + geom_boxplot() + ylab(expression(hat(beta)[GP-LASSO])) + xlab(expression(tau))
 dev.off()
+
 
 ##################################################
 ## Parse 500 adaptive lasso fitting results of two adjecent delays, sd = 0.01
@@ -169,12 +170,12 @@ sum(colMeans(beta.hat))
 mean(pars.hat)
 sd(pars.hat)
 
-library(reshape2)
-library(ggplot2)
-colnames(beta.hat) <- paste("beta", 1:16, sep = ".")
+#library(reshape2)
+#library(ggplot2)
+colnames(beta.hat) <- round(seq(0,5, length.out = 16), digits =2)
 beta.df <- melt(as.data.frame(beta.hat))
 pdf(file = "al-16d-adj.pdf", width = 9,height = 5)
-ggplot(beta.df ,aes (x = variable,y = value))  + geom_boxplot()
+ggplot(beta.df ,aes(x = variable,y = value))  + geom_boxplot() + ylab(expression(hat(beta)[GP-Adaptive-LASSO])) + xlab(expression(tau))
 dev.off()
 
 ##################################################
@@ -212,11 +213,12 @@ sd(beta.hat[,7])
 sd(beta.hat[,8])
 library(reshape2)
 library(ggplot2)
-colnames(beta.hat) <- paste("beta", 1:16, sep = ".")
+colnames(beta.hat) <- round(seq(0,5, length.out = 16), digits =2)
 beta.df <- melt(as.data.frame(beta.hat))
 pdf(file = "nnls-16d-adj-sd02.pdf", width = 9,height = 5)
-ggplot(beta.df ,aes(x = variable,y = value))  + geom_boxplot()
+ggplot(beta.df ,aes(x = variable,y = value))  + geom_boxplot() + ylab(expression(hat(beta)[GP])) + xlab(expression(tau))
 dev.off()
+
 
 
 ## Covariance:
@@ -274,14 +276,15 @@ sum(colMeans(beta.hat))
 mean(pars.hat)
 sd(pars.hat)
 
-library(reshape2)
-library(ggplot2)
-colnames(beta.hat) <- paste("beta", 1:16, sep = ".")
+#library(reshape2)
+#library(ggplot2)
+
+colnames(beta.hat) <- round(seq(0,5, length.out = 16), digits =2)
 beta.df <- melt(as.data.frame(beta.hat))
-pdf(file = "pen-16d-adj-sd02.pdf", width = 9, height = 5)
-ggplot(beta.df, aes(x = variable,y = value))  + geom_boxplot()
+pdf(file = "pen-16d-adj-sd02.pdf", width = 9,height = 5)
+ggplot(beta.df ,aes(x = variable,y = value))  + geom_boxplot() + ylab(expression(hat(beta)[GP-LASSO])) + xlab(expression(tau))
 dev.off()
-rm(list = ls())
+
 
 ##################################################
 ## Parse 500 adaptive-lasso fitting results of two adjecent delays, sd = 0.02
@@ -315,14 +318,14 @@ sum(colMeans(beta.hat))
 mean(pars.hat)
 sd(pars.hat)
 
-library(reshape2)
-library(ggplot2)
-colnames(beta.hat) <- paste("beta", 1:16, sep = ".")
+#library(reshape2)
+#library(ggplot2)
+colnames(beta.hat) <- round(seq(0,5, length.out = 16), digits =2)
 beta.df <- melt(as.data.frame(beta.hat))
 pdf(file = "al-16d-adj-sd02.pdf", width = 9,height = 5)
-ggplot(beta.df ,aes(x = variable,y = value))  + geom_boxplot()
+ggplot(beta.df ,aes(x = variable,y = value))  + geom_boxplot() + ylab(expression(hat(beta)[GP-Adaptive-LASSO])) + xlab(expression(tau))
 dev.off()
-rm(list = ls())
+
 
 
 ##################################################
@@ -358,12 +361,15 @@ colMeans(pars.hat)
 
 library(reshape2)
 library(ggplot2)
-colnames(beta.hat) <- paste("beta", 1:10, sep = ".")
+
+colnames(beta.hat) <- seq(5.5,10,0.5)
 beta.df <- melt(as.data.frame(beta.hat))
-pdf(file = "blowfly-500.pdf", width = 9,height = 5)
-ggplot(beta.df ,aes(x = variable,y = value))  + geom_boxplot()
+pdf(file = "blowfly-500-gp.pdf", width = 9,height = 5)
+ggplot(beta.df ,aes(x = variable,y = value)) + ylab(expression(hat(beta))) + xlab(expression(tau)) + geom_boxplot()
 dev.off()
 rm(list = ls())
+
+
 
 ## Confidence interval estimation
 load("data-blowfly-500.RData")
@@ -400,6 +406,15 @@ pars.true <- c(150 / 8, 8 / 8 , 1000)
 Covar <- list()
 coverage <- c()
 blowfliesfn <- make.blowfly()
+
+load("blowfly-nnls-500-0.RData")
+DEfd.fit <- fd(nnls.res[[1]]$coefs, bbasis.d)
+blowfly.data <- data.res[[1]]$blowfly.data
+blowfly.data.d <- blowfly.data[times0 >= 20]
+
+pdf(file = "blowfly-sim-fit.pdf", width = 8, height = 5)
+plotfit.fd(blowfly.data.d,times.d, DEfd.fit, xlab = "t (days)", ylab = "y", titles = NA, sub = NA)
+dev.off()
 
 ## Do not run
 ## Takes a long time.
@@ -489,10 +504,10 @@ colMeans(pars.hat)
 
 library(reshape2)
 library(ggplot2)
-colnames(beta.hat) <- paste("beta", 1:10, sep = ".")
+colnames(beta.hat) <- seq(5.5,10,0.5)
 beta.df <- melt(as.data.frame(beta.hat))
 pdf(file = "blowfly-500-lasso.pdf", width = 9,height = 5)
-ggplot(beta.df ,aes(x = variable,y = value))  + geom_boxplot()
+ggplot(beta.df ,aes(x = variable,y = value)) + ylab(expression(hat(beta))) + xlab(expression(tau)) + geom_boxplot()
 dev.off()
 rm(list = ls())
 
@@ -603,6 +618,104 @@ coverage <- c()
 
 for(i in 0:19){
     load(paste("blowfly-nnls-250-", i, ".RData", sep=""))
+    print(length(nnls.res))
+    for(j in 1:length(nnls.res)){
+        pars.hat <- rbind(pars.hat, nnls.res[[j]]$pars)
+        beta.hat <- rbind(beta.hat, nnls.res[[j]]$beta)
+    }
+}
+
+cat("nnls blowfly\n")
+fdp <- sum(beta.hat[,-6] != 0) / length(beta.hat[,-6])
+print(fdp)
+fnp <- sum(beta.hat[,6] == 0) / length(beta.hat[,-6])
+print(fnp)
+colMeans(beta.hat)
+colMeans(pars.hat)
+
+library(reshape2)
+library(ggplot2)
+colnames(beta.hat) <- paste("beta", 1:10, sep = ".")
+beta.df <- melt(as.data.frame(beta.hat))
+pdf(file = "blowfly-250.pdf", width = 9,height = 5)
+ggplot(beta.df ,aes(x = variable,y = value))  + geom_boxplot()
+dev.off()
+## Confidence interval estimation
+
+blowfly.day <- seq(0,175, 0.5)
+rr     = range(blowfly.day)       #  the range of observations times
+knots  = seq(rr[1],rr[2],0.5)  #  knots at equally spaced values
+norder = 3                      #  the order of the B-spline basis functions,
+                                #  in this case piece-wise quadratic
+nbasis = length(knots)+norder-2 #  the number of basis functions
+
+#  set up the basis object
+bbasis0 <- create.bspline.basis(range=rr, norder=norder, nbasis=nbasis,breaks=knots)
+times0  <- blowfly.day
+times.d  <- blowfly.day[blowfly.day >= 20]
+knots.d <- seq(20,rr[2],0.5)
+nbasis.d <- length(knots.d) + norder - 2
+bbasis.d <- create.bspline.basis(range=c(20,rr[2]), norder=norder, nbasis=nbasis.d, breaks=knots.d)
+bfdPar0 = fdPar(bbasis0,lambda=1,int2Lfd(1))
+bfdPar.d <- fdPar(bbasis.d,lambda=1,int2Lfd(1))
+fdnames=list(NULL,c('y'),NULL)
+lambda <- 1000
+tau <- list(seq(5.5,10,0.5))
+
+load("data-blowfly-250.RData")
+nnls.res.all <- list()
+for(i in 0:19){
+    load(paste("blowfly-nnls-250-", i, ".RData", sep=""))
+    for(j in 1:length(nnls.res)){
+        nnls.res[[j]] <- c(nnls.res[[j]], blowfly.data = list(data.res[[i*25 + j]]$blowfly.data))
+    }
+    nnls.res.all <- c(nnls.res.all, nnls.res)
+}
+
+tmp <- cov.one(nnls.res.all[[1]])
+
+library(parallel)
+cov.all <- mclapply(nnls.res.all[1:2], cov.one, mc.preschedule = FALSE)
+save.image()
+
+load("parse-cov-250.RData")
+coverage <- c()
+for(i in 1:length(cov.all)){
+    try(coverage <- rbind(coverage, cov.all[[i]]$coverage))
+}
+
+
+## > colMeans(coverage)
+##       c        a       N0  beta1.1  beta1.2  beta1.3  beta1.4  beta1.5
+##   1.000    0.988    0.988    1.000    1.000    1.000    1.000    1.000
+## beta1.6  beta1.7  beta1.8  beta1.9 beta1.10
+##   1.000    1.000    1.000    1.000    1.000
+
+fdpfnp <- function(fd, fn){
+    fdp <- fd * 9 / (fd * 9 + 1 - fn)
+    fnp <- fn / ((1 - fd) * 9 + fn)
+    c(fdp, fnp)
+}
+
+
+
+##################################################
+## Parse 500 nnls fitting results of blowfly simulation, sd = 250
+## Simulation script:
+## blowfly-sim-batch.R
+## Commit: 5581fc49055bfb17fdbfc722d41b0294c5d17464
+##
+##################################################
+
+pars.hat <- beta.hat <- c()
+beta.true <- rep(0, 10)
+beta.true[6] <- 1
+pars.true <- c(150 / 8, 8 / 8 , 1000)
+Covar <- list()
+coverage <- c()
+
+for(i in 0:19){
+    load(paste("blowfly-nnls-250-dist", i, ".RData", sep=""))
     print(length(nnls.res))
     for(j in 1:length(nnls.res)){
         pars.hat <- rbind(pars.hat, nnls.res[[j]]$pars)

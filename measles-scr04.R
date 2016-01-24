@@ -107,6 +107,7 @@ tv.fit <- Profile.LS.TV.DDE(mDTVSIRtrfn, mData.d, times.d, pars = mPars, kappa =
 
 save(tv.fit, lambda1, lambda2, file = paste("mfit04-nnls",lambda1,lambda2,".RData", sep=""))
 
+print("nnls done!")
 
 res.tv.delay <- sparse.TV.DDE(fn = mDTVSIRtrfn, mData.d, times = times.d, basisvals = bbasis.d, lambda = c(lambda1,lambda2), more = list(b = procB), in.meth='nlminb', basisvals0 = bbasis0, coefs0 = coefs0, control.out = list(maxIter = 1, selection.method = "penalized"), nbeta = 7, ndelay = 2, tau = list(seq(0,6/52, 1/52)), nnls.res = tv.fit$res)
 

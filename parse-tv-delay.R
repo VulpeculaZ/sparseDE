@@ -9,7 +9,7 @@ dev.off()
 
 
 ##################################################
-## Parse 500 fused-lasso fitting results of 1 delays, 1 jump in tv, sd = 100
+## Parse 500 fused-lasso fitting results of 1 delays, 1 jump in tv, sd = 200
 ## Simulation script: delay-tv-lasso.R
 ## Fri Sep  5 11:28:00 CDT 2014
 ## Commit: 304a4e007e1f94556c7640826a117cc8175c3198
@@ -22,7 +22,7 @@ pars.true <- 10
 kappa.true <- c(rep(0.005,3), rep(0.0025,3))
 
 for(i in 1:19){
-    load(paste("tv-lasso-6d-6tv-sd100-", i, ".RData", sep=""))
+    load(paste("tv-lasso-6d-6tv-sd200-", i, ".RData", sep=""))
     for(j in 1:25){
         pars.pen <- c(pars.pen, sim.res[[j]]$select$pars.pen)
         beta.pen <- rbind(beta.pen, sim.res[[j]]$select$beta.pen)
@@ -41,29 +41,27 @@ fdp <- sum((kappa.pen[,-6] - kappa.pen[,-1])[,-3] != 0 ) / sum((kappa.pen[,-6] -
 fdp
 fnp <- sum(kappa.pen[,3]-kappa.pen[,4] == 0) / sum((kappa.pen[,-6] - kappa.pen[,-1]) == 0)
 fnp
-colMeans(kappa.pen)
 
+colMeans(kappa.pen)
 mean(kappa.pen[,1:3])
 sd(kappa.pen[,1:3])
 mean(kappa.pen[,4:6])
 sd(kappa.pen[,4:6])
 
 
-library(reshape2)
-library(ggplot2)
-colnames(beta.pen) <- paste("beta", 1:6, sep = ".")
+#library(reshape2)
+#library(ggplot2)
+
+colnames(beta.pen) <- c(0, "1/26", "2/26", "3/26", "4/26","5/26")
 beta.df <- melt(as.data.frame(beta.pen))
 pdf(file = "lasso-6d-6tv-beta.pdf", width = 9,height = 5)
-ggplot(beta.df ,aes(x = variable,y = value))  + geom_boxplot()
+ggplot(beta.df ,aes(x = variable,y = value))  + geom_boxplot() + ylab(expression(hat(beta)[GP-LASSO])) + xlab(expression(tau))
 dev.off()
 
-
-
-colnames(kappa.pen) <- paste("kappa", 1:6, sep = ".")
+colnames(kappa.pen) <- 1:6
 kappa.df <- melt(as.data.frame(kappa.pen))
-kappa.df$value[kappa.df$value > 0.02 | kappa.df$value < 0.001]  <- NA
-pdf(file = "lasso-6d-6tv-kappa4.pdf", width = 9,height = 5)
-ggplot(kappa.df ,aes(x = variable,y = value))  + geom_boxplot()
+pdf(file = "lasso-6d-6tv-kappa.pdf", width = 9,height = 5)
+ggplot(kappa.df, aes(x = variable,y = value))  + geom_boxplot() + ylab(expression(hat(kappa)[GP-fused-LASSO])) + xlab(expression(i))
 dev.off()
 
 ##################################################
@@ -91,21 +89,18 @@ for(i in 0:19){
 }
 
 cat("nnls")
-fdp <- sum(beta.hat[,-c(6)] != 0) / length(beta.hat[,-c(6)])
+fdp <- sum(beta.hat[,-c(6)] != 0) / sum(beta.hat != 0)
 print(fdp)
-fnp <- sum(beta.hat[,c(6)] == 0) / length(beta.hat[,c(6)])
+fnp <- sum(beta.hat[,c(6)] == 0) / sum(beta.hat == 0)
 print(fnp)
 colMeans(beta.hat)
 
-
-fdp <- sum((kappa.hat[,-6] - kappa.hat[,-1])[,-3] != 0 ) / length((kappa.hat[,-6] - kappa.hat[,-1])[,-3])
+fdp <- sum((kappa.hat[,-6] - kappa.hat[,-1])[,-3] != 0 ) / sum((kappa.hat[,-6] - kappa.hat[,-1]) != 0)
 fdp
-fnp <- sum(kappa.hat[,3]-kappa.hat[,4] == 0) / dim(kappa.hat)[1]
+fnp <- sum(kappa.hat[,3]-kappa.hat[,4] == 0) / sum((kappa.hat[,-6] - kappa.hat[,-1]) == 0)
 fnp
 
 colMeans(kappa.hat)
-
-
 mean(kappa.hat[,1:3])
 sd(kappa.hat[,1:3])
 mean(kappa.hat[,4:6])
@@ -113,16 +108,17 @@ sd(kappa.hat[,4:6])
 
 library(reshape2)
 library(ggplot2)
-colnames(beta.hat) <- paste("beta", 1:6, sep = ".")
+
+colnames(beta.hat) <- c(0, "1/26", "2/26", "3/26", "4/26","5/26")
 beta.df <- melt(as.data.frame(beta.hat))
 pdf(file = "nnls-6d-6tv-beta.pdf", width = 9,height = 5)
-ggplot(beta.df ,aes(x = variable,y = value))  + geom_boxplot()
+ggplot(beta.df ,aes(x = variable,y = value))  + geom_boxplot() + ylab(expression(hat(beta)[GP])) + xlab(expression(tau))
 dev.off()
 
-colnames(kappa.hat) <- paste("kappa", 1:6, sep = ".")
+colnames(kappa.hat) <- 1:6
 kappa.df <- melt(as.data.frame(kappa.hat))
 pdf(file = "nnls-6d-6tv-kappa.pdf", width = 9,height = 5)
-ggplot(kappa.df, aes(x = variable,y = value))  + geom_boxplot()
+ggplot(kappa.df, aes(x = variable,y = value))  + geom_boxplot() + ylab(expression(hat(kappa)[GP])) + xlab(expression(i))
 dev.off()
 
 

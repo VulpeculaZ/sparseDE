@@ -8,6 +8,7 @@ source("./R/sparse.R")
 source("./R/LS.sparse.R")
 
 library(gpDDE)
+
 DSIR.gen <- function(t, y, parms){
     if(t < 0){
         lagI1 <- 2000
@@ -78,6 +79,8 @@ dde.fit <- Profile.LS.DDE(DSIRfn, yout.d, times.d, pars = initPars, beta = initB
 
 DSIRInitCoefs <- dde.fit$ncoefs
 save(DSIRInitCoefs, file = "DSIRinit.RData")
+DEfd.fit <- fd(dde.fit$res$coefs, basis.d)
+
 
 initPars <- c(5, 0.0012)
 names(initPars) <- c("gamma", "beta")
@@ -103,9 +106,15 @@ dde.fit1 <- dde.fit
 
 DDEdiag(y = yout.d, times = times.d, fitted = DEfd.fit, use.TSA = TRUE)
 
-IntegrateForward.DDE( times.forecast = c(25, 26), pars = dde.fit$res$pars, beta = dde.fit$res$beta,  proc = dde.fit$proc, more = dde.fit$more, tau = tau, ndelay = 2, fdobj0 = dde.fit$fdobj0, fdobj.d = DEfd.fit)
+IntegrateForward.DDE( times.forecast = c(25, 26), pars = dde.fit$res$pars,
+                     beta = dde.fit$res$beta,  proc = dde.fit$proc,
+                     more = dde.fit$more, tau = tau, ndelay = 2,
+                     fdobj0 = dde.fit$fdobj0, fdobj.d = DEfd.fit)
 
-forecast.DDE(y = yout.d, times = times.d, h = 40, pars = dde.fit$res$pars, beta = dde.fit$res$beta, proc = dde.fit$proc, more = dde.fit$more, tau = tau, ndelay = 2, fdobj0 = dde.fit$fdobj0, fdobj.d = DEfd.fit, ask = FALSE, xlab = "times", ylab = "Population")
+forecast.DDE(y = yout.d, times = times.d, h = 40, pars = dde.fit$res$pars,
+             beta = dde.fit$res$beta, proc = dde.fit$proc, more = dde.fit$more,
+             tau = tau, ndelay = 2, fdobj0 = dde.fit$fdobj0, fdobj.d = DEfd.fit,
+             ask = FALSE, xlab = "times", ylab = "Population")
 
 parms <- list(pars = dde.fit$res$pars, beta = dde.fit$res$beta,  proc = dde.fit$proc, more = dde.fit$more, tau = tau, ndelay = 2, fdobj0 = dde.fit$fdobj.d, fdobj.d = dde.fit$fdobj0, t0 = 25, tau.max = 0.6)
 y0 <- c(eval.fd(25, dde.fit$fdobj.d))
@@ -138,7 +147,7 @@ Covar <- ProfileSSE.covariance.DDE(pars = dde.fit$res$pars,
                                      basisvals0 = basis0, coefs0 = coefs0,
                                      nbeta = length(beta), ndelay = 2, tau = tau)
 
-diag(Covar)
+sqrt(diag(Covar))
 
 tvtrans <- function(t,k){
     period <- (t %% 5) / 5
@@ -340,3 +349,11 @@ DTVSIRfn <- DTVSIRfn.make()
 source("./R/tv-delay.R")
 
 dde.fit <- Profile.LS.tv.delay(DTVSIRfn, yout.d, times.d, pars = initPars, beta = initBeta, kappa = initKappa, coefs = coefs.d, basisvals = basis.d, lambda = 1000, in.meth='nlminb', delay = delay, basisvals0 = basis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 2, tau = tau, control.out = list(method = "nnls.eq", maxIter = 50, lambda.sparse = 0, echo = TRUE))
+
+dde.fit <- Profile.LS.sparse(blowfliesfn, blowfly.data.d, times.d,
+                             pars = blowfly.pars, beta = initBeta,
+                             coefs = coefs.d, basisvals = bbasis.d, lambda = lambda,
+                             in.meth='nlminb', delay = delay, basisvals0 = bbasis0,
+                             coefs0 = coefs0, nbeta = length(initBeta),
+                             ndelay = 1, tau = tau,
+                             control.out = list(method = "nnls.eq", echo = TRUE))

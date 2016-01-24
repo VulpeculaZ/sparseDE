@@ -3,7 +3,7 @@ library(spam)
 source("./R/make.blowfly.R")
 ## detach("package:limSolve", unload = TRUE)
 
-load("data-blowfly-250-dist.RData")
+load("data-blowfly-250.RData")
 blowfliesfn <- make.blowfly()
 
 blowfly.day <- seq(0,175, 0.5)
@@ -27,8 +27,8 @@ bfdPar0 = fdPar(bbasis0,lambda=1,int2Lfd(1))
 bfdPar.d <- fdPar(bbasis.d,lambda=1,int2Lfd(1))
 args <- commandArgs(TRUE)
 dataRange <- (1 + 25 * as.numeric(args[1])) : (25 * (as.numeric(args[1]) + 1))
-filename <- paste("blowfly-nnls-250-dist", as.numeric(args[1]),".RData", sep = "")
-tau <- list(seq(5.5,10,0.5))
+filename <- paste("blowfly-nnls-250-1delay-true", as.numeric(args[1]),".RData", sep = "")
+tau <- list(8)
 
 
 begTime <- Sys.time()
@@ -51,9 +51,12 @@ for(i in 1:length(dataRange)){
     DEfd.d <- fd(coefs.d,bbasis.d, fdnames)
 
     lambda <- 10000
-    initBeta <- data.res[[dataRange[i]]]$initBeta
-    initPars <- data.res[[dataRange[i]]]$initPars
+    initBeta <- 1
+    initPars <- c(150 / 8, 8 / 8 , 1000)
+    names(initPars) <- c("c", "a", "N0")
     try(dde.fit <- Profile.LS.DDE(blowfliesfn, blowfly.data.d, times.d, pars = initPars, beta = initBeta, coefs = coefs.d, basisvals = bbasis.d, lambda = lambda, in.meth='nlminb',  basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 1, tau = tau, control.out = list(method = "nnls.eq", maxIter = 50, lambda.sparse = 0, echo = TRUE)))
+    ## DEfd.fit <- fd(dde.fit$res$coefs, bbasis.d)
+    ## DDEdiag(y = blowfly.data.d, times = times.d, fitted = DEfd.fit)
     nnls.res[[i]] <- dde.fit$res
     save(nnls.res, file =filename)
 }
