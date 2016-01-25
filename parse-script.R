@@ -1,6 +1,6 @@
 library(gpDDE)
 library(spam)
-load("data-blowfly-1000.RData")
+load("data-blowfly-250.RData")
 
 cov.one <- function(l){
      pars.hat <- l$pars
@@ -53,7 +53,7 @@ blowfliesfn <- make.blowfly()
 
 nnls.res.all <- list()
 for(i in 0:19){
-    load(paste("blowfly-nnls-1000-", i, ".RData", sep=""))
+    load(paste("blowfly-nnls-250-true", i, ".RData", sep=""))
     for(j in 1:length(nnls.res)){
         nnls.res[[j]] <- c(nnls.res[[j]], blowfly.data = list(data.res[[i*25 + j]]$blowfly.data))
     }
@@ -65,7 +65,7 @@ for(i in 1:length(nnls.res.all)){
     print(i)
     try(cov.all[[i]] <- cov.one(nnls.res.all[[i]]))
 }
-save(cov.all, file = "parse-cov-1000.RData")
+save(cov.all, file = "parse-cov-250-true.RData")
 
 coverage <- c()
 for(i in 1:length(cov.all)){
