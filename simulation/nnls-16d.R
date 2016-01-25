@@ -2,7 +2,7 @@ source("./R/DSIRfnSparse.R")
 
 library(spam)
 library(gpDDE)
-load("data-2dadj-sd01.RData")
+load("data-2dadj-sd02.RData")
 
 times <- seq(-DSIR.pars["tau2"], 25, by = 0.1)
 times0 <- knots0 <- times[times >= 0]
@@ -20,7 +20,7 @@ bfdPar.d <- fdPar(basis.d,lambda=1,int2Lfd(1))
 
 args <- commandArgs(TRUE)
 dataRange <- (1 + 25 * as.numeric(args[1])) : (25 * (as.numeric(args[1]) + 1))
-filename <- paste("nnls-2dadj-sd01-true-", as.numeric(args[1]),".RData", sep = "")
+filename <- paste("nnls-2dadj-sd02-true-", as.numeric(args[1]),".RData", sep = "")
 
 begTime <- Sys.time()
 set.seed(42)
