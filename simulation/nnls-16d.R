@@ -1,13 +1,7 @@
-source("./R/sparse.R")
-source("./R/LS.sparse.R")
 source("./R/DSIRfnSparse.R")
-source("./R/tv-delay-cov.R")
 
-library(CollocInfer)
-library(MASS)
 library(spam)
-#library(limSolve)
-library(nnls)
+library(gpDDE)
 load("data-2dadj-sd01.RData")
 
 times <- seq(-DSIR.pars["tau2"], 25, by = 0.1)
@@ -26,7 +20,7 @@ bfdPar.d <- fdPar(basis.d,lambda=1,int2Lfd(1))
 
 args <- commandArgs(TRUE)
 dataRange <- (1 + 25 * as.numeric(args[1])) : (25 * (as.numeric(args[1]) + 1))
-filename <- paste("nnls-2dadj-sd01-", as.numeric(args[1]),".RData", sep = "")
+filename <- paste("nnls-2dadj-sd01-true-", as.numeric(args[1]),".RData", sep = "")
 
 begTime <- Sys.time()
 set.seed(42)
@@ -53,11 +47,12 @@ for(i in 1:length(dataRange)){
     ## Data
     dsirData <- matrix(xout.d, ncol =2, dimnames = list(NULL,c("S", "I")))
     ## Setting initial values
-    initPars <- data.res[[dataRange[i]]]$initPars
-    initBeta <- data.res[[dataRange[i]]]$initBeta
-    dde.fit <- Profile.LS.sparse(DSIRfn.sparse, dsirData, times.d, pars = initPars, beta = initBeta, coefs = coefs.d, basisvals = basis.d, lambda = 1000, in.meth='nlminb', delay = delay, basisvals0 = basis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 2, tau = list(seq(0,5, length.out = 16)), control.out = list(method = "nnls.old", maxIter = 20, lambda.sparse = 0, echo = TRUE))
+    initPars <- 0.5
+    names(initPars) <- c("gamma")
+    initBeta <- c(2, 2)
+    dde.fit <- Profile.LS.DDE(DSIRfn.sparse, dsirData, times.d, pars = initPars, beta = initBeta, coefs = coefs.d, basisvals = basis.d, lambda = 1000, in.meth='nlminb', basisvals0 = basis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 2, tau = list(c(2, 7/3)), control.out = list(method = "nnls.old", maxIter = 20, echo = TRUE, tol = 1e-10))
     Covar <- NA
-    try(Covar <- ProfileSSE.covariance.delay(fn = DSIRfn.sparse, data = dsirData, times = times.d, pars = dde.fit$res$pars, beta = dde.fit$res$beta, active = NULL, coefs = dde.fit$res$coefs, basisvals = basis.d, lambda = 1000, in.meth='nlminb', delay = delay, basisvals0 = basis0, coefs0 = coefs0, nbeta = length(dde.fit$res$beta), ndelay = 2, tau = list(seq(0,5, length.out = 16))))
+    try(Covar <- ProfileSSE.covariance.DDE(fn = DSIRfn.sparse, data = dsirData, times = times.d, pars = dde.fit$res$pars, beta = dde.fit$res$beta, active = NULL, coefs = dde.fit$res$coefs, basisvals = basis.d, lambda = 1000, in.meth='nlminb', basisvals0 = basis0, coefs0 = coefs0, nbeta = 2, ndelay = 2, tau = list(c(2, 7/3))))
     sim.Covar[[i]] <- Covar
     nnls.res[[i]] <- dde.fit$res
     save(nnls.res, sim.Covar, DSIR.pars, file =filename)
