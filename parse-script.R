@@ -1,6 +1,6 @@
 library(gpDDE)
 library(spam)
-load("data-blowfly-250.RData")
+load("data-blowfly-500.RData")
 
 cov.one <- function(l){
      pars.hat <- l$pars
@@ -42,35 +42,29 @@ bbasis.d <- create.bspline.basis(range=c(20,rr[2]), norder=norder, nbasis=nbasis
 bfdPar0 = fdPar(bbasis0,lambda=1,int2Lfd(1))
 bfdPar.d <- fdPar(bbasis.d,lambda=1,int2Lfd(1))
 fdnames=list(NULL,c('y'),NULL)
-lambda <- 1000
+lambda <- 10000
 tau <- list(seq(5.5,10,0.5))
 beta.true <- rep(0, 10)
 beta.true[6] <- 1
 pars.true <- c(150 / 8, 8 / 8 , 1000)
 source("./R/make.blowfly.R")
 blowfliesfn <- make.blowfly()
-
+args <- commandArgs(TRUE)
+i <- as.numeric(args[1])
 
 nnls.res.all <- list()
-for(i in 0:19){
-    load(paste("blowfly-nnls-250-true", i, ".RData", sep=""))
-    for(j in 1:length(nnls.res)){
-        nnls.res[[j]] <- c(nnls.res[[j]], blowfly.data = list(data.res[[i*25 + j]]$blowfly.data))
-    }
-    nnls.res.all <- c(nnls.res.all, nnls.res)
+load(paste("blowfly-nnls-500-true", i, ".RData", sep=""))
+for(j in 1:length(nnls.res)){
+    nnls.res.all[[j]] <- c(nnls.res[[j]], blowfly.data = list(data.res[[i*25 + j]]$blowfly.data))
 }
 
 cov.all <- list()
-for(i in 1:length(nnls.res.all)){
-    print(i)
-    try(cov.all[[i]] <- cov.one(nnls.res.all[[i]]))
+for(j in 1:length(nnls.res.all)){
+    print(j)
+    try(cov.all[[j]] <- cov.one(nnls.res.all[[j]]))
 }
-save(cov.all, file = "parse-cov-250-true.RData")
+save(cov.all, file = paste("parse-cov-500-true", i, ".RData", sep = ""))
 
-coverage <- c()
-for(i in 1:length(cov.all)){
-    try(coverage <- rbind(coverage, cov.all[[i]]$coverage))
-}
 
 ## > colMeans(coverage)
 ##       c        a       N0  beta1.1  beta1.2  beta1.3  beta1.4  beta1.5
