@@ -43,8 +43,8 @@ bfdPar0 = fdPar(bbasis0,lambda=1,int2Lfd(1))
 bfdPar.d <- fdPar(bbasis.d,lambda=1,int2Lfd(1))
 fdnames=list(NULL,c('y'),NULL)
 lambda <- 10000
-tau <- list(8)
-beta.true <- 1
+tau <- list(c(6,8,10))
+beta.true <- c(0, 1, 0)
 pars.true <- c(150 / 8, 8 / 8 , 1000)
 source("./R/make.blowfly.R")
 blowfliesfn <- make.blowfly()
@@ -52,7 +52,7 @@ args <- commandArgs(TRUE)
 i <- as.numeric(args[1])
 
 nnls.res.all <- list()
-load(paste("blowfly-nnls-500-1delay-true", i, ".RData", sep=""))
+load(paste("blowfly-nnls-500-3dealy-true", i, ".RData", sep=""))
 for(j in 1:length(nnls.res)){
     nnls.res.all[[j]] <- c(nnls.res[[j]], blowfly.data = list(data.res[[i*25 + j]]$blowfly.data))
 }
@@ -62,7 +62,7 @@ for(j in 1:length(nnls.res.all)){
     print(j)
     try(cov.all[[j]] <- cov.one(nnls.res.all[[j]]))
 }
-save(cov.all, file = paste("parse-cov-500-1delay-true", i, ".RData", sep = ""))
+save(cov.all, file = paste("parse-cov-500-3delay-true", i, ".RData", sep = ""))
 
 
 ## > colMeans(coverage)
