@@ -95,6 +95,28 @@ pdf(file = "nnls-16d-adj.pdf", width = 9,height = 5)
 ggplot(beta.df ,aes(x = variable,y = value))  + geom_boxplot() + ylab(expression(hat(beta)[GP])) + xlab(expression(tau))
 dev.off()
 
+
+## Covariance:
+Covar.mat <- c()
+for(i in 0:19){
+    load(paste("nnls-2dadj-sd02-", i, ".RData", sep=""))
+    for(j in 1:25){
+        if(!is.na(sim.Covar[[j]][1])){
+            Covar.mat <- rbind(Covar.mat, diag(sim.Covar[[j]]))
+        }else{
+            print(i * 20 + j)
+        }
+    }
+}
+
+## Coverage of 95% CI:
+cover.par <- ((pars.hat + 1.96 * sqrt(Covar.mat[,1])) >= 0.5) & ((pars.hat - 1.96 * sqrt(Covar.mat[,1])) <= 0.5)
+cover.beta7 <- ((beta.hat[,7] + 1.96 * sqrt(Covar.mat[,8])) >= 2) & ((beta.hat[,7] - 1.96 * sqrt(Covar.mat[,8])) <= 2)
+cover.beta8 <- ((beta.hat[,8] + 1.96 * sqrt(Covar.mat[,9])) >= 2) & ((beta.hat[,8] - 1.96 * sqrt(Covar.mat[,9])) <= 2)
+sum(cover.beta7) / 500
+sum(cover.beta8) / 500
+
+
 ##################################################
 ## Parse 500 penalized fitting results of two adjecent delays, sd = 0.01
 ## Penalization is done at the last iteration
@@ -224,7 +246,7 @@ dev.off()
 ## Covariance:
 Covar.mat <- c()
 for(i in 0:19){
-    load(paste("pen-2dadj-sd02-", i, ".RData", sep=""))
+    load(paste("nnls-2dadj-sd02-", i, ".RData", sep=""))
     for(j in 1:25){
         if(!is.na(sim.Covar[[j]][1])){
             Covar.mat <- rbind(Covar.mat, diag(sim.Covar[[j]]))
@@ -633,13 +655,18 @@ print(fnp)
 colMeans(beta.hat)
 colMeans(pars.hat)
 
+for(i in 1:3){
+print(sd(pars.hat[,i]))
+}
+
 library(reshape2)
 library(ggplot2)
-colnames(beta.hat) <- paste("beta", 1:10, sep = ".")
+colnames(beta.hat) <- seq(5.5,10,0.5)
 beta.df <- melt(as.data.frame(beta.hat))
 pdf(file = "blowfly-250.pdf", width = 9,height = 5)
-ggplot(beta.df ,aes(x = variable,y = value))  + geom_boxplot()
+ggplot(beta.df ,aes(x = variable,y = value)) + ylab(expression(hat(beta))) + xlab(expression(tau)) + geom_boxplot()
 dev.off()
+
 ## Confidence interval estimation
 
 blowfly.day <- seq(0,175, 0.5)
@@ -793,4 +820,164 @@ fdpfnp <- function(fd, fn){
     fdp <- fd * 9 / (fd * 9 + 1 - fn)
     fnp <- fn / ((1 - fd) * 9 + fn)
     c(fdp, fnp)
+}
+
+
+
+##################################################
+## Parse 500 nnls fitting results of blowfly simulation, sd = 500
+## Simulation script:
+## blowfly-sim-batch.R
+## Commit: fbde97e6f63178e3fcabf5d8e50de64b1a2a2b0b
+##
+##################################################
+
+pars.hat <- beta.hat <- c()
+beta.true <- rep(0, 10)
+beta.true[6] <- 1
+pars.true <- c(150 / 8, 8 / 8 , 1000)
+Covar <- list()
+coverage <- c()
+
+for(i in 0:19){
+    load(paste("blowfly-nnls-500-true", i, ".RData", sep=""))
+    load(paste("parse-cov-500-true",i,".RData", sep = ""))
+    for(j in 1:25){
+        pars.hat <- rbind(pars.hat, nnls.res[[j]]$pars)
+        beta.hat <- rbind(beta.hat, nnls.res[[j]]$beta)
+        try(coverage <- rbind(coverage, cov.all[[j]]$coverage))
+    }
+}
+
+cat("nnls blowfly\n")
+fdp <- sum(beta.hat[,-6] != 0) / sum(beta.hat[,-6] != 0)
+print(fdp)
+fnp <- sum(beta.hat[,6] == 0) / sum(beta.hat[,6] == 0)
+print(fnp)
+colMeans(beta.hat)
+colMeans(pars.hat)
+
+library(reshape2)
+library(ggplot2)
+
+colnames(beta.hat) <- seq(5.5,10,0.5)
+beta.df <- melt(as.data.frame(beta.hat))
+pdf(file = "blowfly-500-gp-true.pdf", width = 9,height = 5)
+ggplot(beta.df ,aes(x = variable,y = value)) + ylab(expression(hat(beta))) + xlab(expression(tau)) + geom_boxplot()
+dev.off()
+rm(list = ls())
+
+colSums(coverage) / 500
+
+load("parse-cov-250.RData")
+coverage <- c()
+for(i in 1:length(cov.all)){
+    try(coverage <- rbind(coverage, cov.all[[i]]$coverage))
+}
+
+       c        a       N0  beta1.1  beta1.2  beta1.3  beta1.4  beta1.5
+   0.954    0.914    0.900    0.994    1.000    1.000    0.996    1.000
+ beta1.6  beta1.7  beta1.8  beta1.9 beta1.10
+   0.980    0.992    0.994    1.000    0.998
+
+
+
+
+##################################################
+## Parse 500 nnls fitting results of blowfly simulation, sd = 250
+## Simulated distributed delay
+## Simulation script:
+## blowfly-sim-batch.R
+## Commit: e3aeaa60a380e119969c555e802583a6fa07556b
+## Mon Jan 25 12:15:16 CST 2016
+##################################################
+
+pars.hat <- beta.hat <- c()
+beta.true <- rep(0, 10)
+beta.true[6] <- 1
+pars.true <- c(150 / 8, 8 / 8 , 1000)
+Covar <- list()
+coverage <- c()
+
+for(i in 0:19){
+    load(paste("blowfly-nnls-250-dist", i, ".RData", sep=""))
+    for(j in 1:25){
+        pars.hat <- rbind(pars.hat, nnls.res[[j]]$pars)
+        beta.hat <- rbind(beta.hat, nnls.res[[j]]$beta)
+    }
+}
+
+pars.hat <- pars.hat[-77,]
+cat("nnls blowfly\n")
+fdp <- sum(beta.hat[,-6] != 0) / sum(beta.hat[,-6] != 0)
+print(fdp)
+fnp <- sum(beta.hat[,6] == 0) / sum(beta.hat[,6] == 0)
+print(fnp)
+colMeans(beta.hat)
+colMeans(pars.hat)
+
+for(i in 1:3){
+print(sd(pars.hat[,i]))
+}
+
+library(reshape2)
+library(ggplot2)
+
+colnames(beta.hat) <- seq(5.5,10,0.5)
+beta.df <- melt(as.data.frame(beta.hat))
+pdf(file = "blowfly-250-gp-dist.pdf", width = 9,height = 5)
+ggplot(beta.df ,aes(x = variable,y = value)) + ylab(expression(hat(beta))) + xlab(expression(tau)) + geom_boxplot()
+dev.off()
+rm(list = ls())
+
+
+##################################################
+## Parse 500 nnls fitting results of blowfly simulation, sd = 500
+## Simulation script:
+## blowfly-sim-batch.R
+## Commit: 6a77de5ebae55ff4d6f710c7922514965a8970ce
+## Mon Jan 25 13:03:25 CST 2016
+##################################################
+
+pars.hat <- beta.hat <- c()
+beta.true <- rep(0, 10)
+beta.true[6] <- 1
+pars.true <- c(150 / 8, 8 / 8 , 1000)
+Covar <- list()
+coverage <- c()
+
+for(i in 0:19){
+    load(paste("blowfly-nnls-500-true", i, ".RData", sep=""))
+    load(paste("parse-cov-500-true",i,".RData", sep = ""))
+    for(j in 1:25){
+        pars.hat <- rbind(pars.hat, nnls.res[[j]]$pars)
+        beta.hat <- rbind(beta.hat, nnls.res[[j]]$beta)
+        try(coverage <- rbind(coverage, cov.all[[j]]$coverage))
+    }
+}
+
+cat("nnls blowfly\n")
+fdp <- sum(beta.hat[,-6] != 0) / sum(beta.hat[,-6] != 0)
+print(fdp)
+fnp <- sum(beta.hat[,6] == 0) / sum(beta.hat[,6] == 0)
+print(fnp)
+colMeans(beta.hat)
+colMeans(pars.hat)
+
+library(reshape2)
+library(ggplot2)
+
+colnames(beta.hat) <- seq(5.5,10,0.5)
+beta.df <- melt(as.data.frame(beta.hat))
+pdf(file = "blowfly-500-gp-true.pdf", width = 9,height = 5)
+ggplot(beta.df ,aes(x = variable,y = value)) + ylab(expression(hat(beta))) + xlab(expression(tau)) + geom_boxplot()
+dev.off()
+rm(list = ls())
+
+colSums(coverage) / 500
+
+load("parse-cov-250.RData")
+coverage <- c()
+for(i in 1:length(cov.all)){
+    try(coverage <- rbind(coverage, cov.all[[i]]$coverage))
 }

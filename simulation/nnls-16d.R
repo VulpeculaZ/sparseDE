@@ -2,9 +2,41 @@ source("./R/DSIRfnSparse.R")
 
 library(spam)
 library(gpDDE)
-load("data-2dadj-sd02.RData")
+load("data-1delay-sd02.RData")
 
-times <- seq(-DSIR.pars["tau2"], 25, by = 0.1)
+
+ProfileSSE.covariance.DDE <- function(pars, beta, active = NULL, eps = 1e-06, ...)
+{
+    if (is.null(active)) {
+        active = 1:length(pars)
+    }
+    apars <- pars[active]
+    H <- matrix(0, length(apars) + length(beta), length(apars) + length(beta))
+    g <- gpDDE:::ProfileDP.sparse(pars = pars, beta = beta, active = active, ...)
+    g$Zdf <- matrix(g$Zdf)
+    gg <- c(colSums(g$Xdf), colSums(g$Zdf))
+    for(i in 1:(length(apars) + length(beta))){
+        if(i <= length(apars)){
+            tpars <- pars
+            tpars[active][i] <-tpars[active][i] + eps
+            tg <- gpDDE:::ProfileDP.sparse(tpars, beta, active = active, ...)
+            tg$Zdf <- matrix(tg$Zdf)
+            tg <- c(colSums(tg$Xdf), colSums(matrix(tg$Zdf)))
+        } else {
+            tbeta <- beta
+            tbeta[i - length(apars)] <- beta[i - length(apars)] + eps
+            tbeta <- tbeta / sum(tbeta)
+            tg <- gpDDE:::ProfileDP.sparse(pars, tbeta, active = active, ...)
+            tg$Zdf <- matrix(tg$Zdf)
+            tg <- c(colSums(tg$Xdf), colSums(tg$Zdf))
+        }
+        H[,i] <- (tg - gg)/eps
+    }
+    Covar <- NeweyWest.Var( 0.5*(t(H)+H) ,cbind(g$Xdf, g$Zdf) ,5)
+    return(Covar)
+}
+
+times <- seq(-DSIR.pars["tau1"], 25, by = 0.1)
 times0 <- knots0 <- times[times >= 0]
 times.d <- knots.d <- times[times >= 5]
 norder = 3
@@ -20,7 +52,7 @@ bfdPar.d <- fdPar(basis.d,lambda=1,int2Lfd(1))
 
 args <- commandArgs(TRUE)
 dataRange <- (1 + 25 * as.numeric(args[1])) : (25 * (as.numeric(args[1]) + 1))
-filename <- paste("nnls-2dadj-sd02-true-", as.numeric(args[1]),".RData", sep = "")
+filename <- paste("nnls-2dadj-sd02-1delay-", as.numeric(args[1]),".RData", sep = "")
 
 begTime <- Sys.time()
 set.seed(42)
@@ -49,10 +81,10 @@ for(i in 1:length(dataRange)){
     ## Setting initial values
     initPars <- 0.5
     names(initPars) <- c("gamma")
-    initBeta <- c(2, 2)
-    dde.fit <- Profile.LS.DDE(DSIRfn.sparse, dsirData, times.d, pars = initPars, beta = initBeta, coefs = coefs.d, basisvals = basis.d, lambda = 1000, in.meth='nlminb', basisvals0 = basis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 2, tau = list(c(2, 7/3)), control.out = list(method = "nnls.old", maxIter = 20, echo = TRUE, tol = 1e-10))
+    initBeta <- c(2)
+    dde.fit <- Profile.LS.DDE(DSIRfn.sparse, dsirData, times.d, pars = initPars, beta = initBeta, coefs = coefs.d, basisvals = basis.d, lambda = 1000, in.meth='nlminb', basisvals0 = basis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 2, tau = list(c(2)), control.out = list(method = "nnls.old", maxIter = 20, echo = TRUE, tol = 1e-10))
     Covar <- NA
-    try(Covar <- ProfileSSE.covariance.DDE(fn = DSIRfn.sparse, data = dsirData, times = times.d, pars = dde.fit$res$pars, beta = dde.fit$res$beta, active = NULL, coefs = dde.fit$res$coefs, basisvals = basis.d, lambda = 1000, in.meth='nlminb', basisvals0 = basis0, coefs0 = coefs0, nbeta = 2, ndelay = 2, tau = list(c(2, 7/3))))
+    try(Covar <- ProfileSSE.covariance.DDE(fn = DSIRfn.sparse, data = dsirData, times = times.d, pars = dde.fit$res$pars, beta = dde.fit$res$beta, active = NULL, coefs = dde.fit$res$coefs, basisvals = basis.d, lambda = 1000, in.meth='nlminb', basisvals0 = basis0, coefs0 = coefs0, nbeta = 2, ndelay = 2, tau = list(c(2))))
     sim.Covar[[i]] <- Covar
     nnls.res[[i]] <- dde.fit$res
     save(nnls.res, sim.Covar, DSIR.pars, file =filename)
