@@ -25,7 +25,7 @@ ProfileSSE.covariance.DDE <- function(pars, beta, active = NULL, eps = 1e-06, ..
         } else {
             tbeta <- beta
             tbeta[i - length(apars)] <- beta[i - length(apars)] + eps
-            tbeta <- tbeta / sum(tbeta)
+            ## tbeta <- tbeta / sum(tbeta)
             tg <- gpDDE:::ProfileDP.sparse(pars, tbeta, active = active, ...)
             tg$Zdf <- matrix(tg$Zdf)
             tg <- c(colSums(tg$Xdf), colSums(tg$Zdf))
