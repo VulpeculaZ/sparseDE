@@ -2,7 +2,7 @@ source("./R/DSIRfnSparse.R")
 
 library(spam)
 library(gpDDE)
-load("data-1delay-sd02.RData")
+load("data-1delay-sd01.RData")
 
 
 ProfileSSE.covariance.DDE <- function(pars, beta, active = NULL, eps = 1e-06, ...)
@@ -52,7 +52,7 @@ bfdPar.d <- fdPar(basis.d,lambda=1,int2Lfd(1))
 
 args <- commandArgs(TRUE)
 dataRange <- (1 + 25 * as.numeric(args[1])) : (25 * (as.numeric(args[1]) + 1))
-filename <- paste("nnls-2dadj-sd02-1delay-", as.numeric(args[1]),".RData", sep = "")
+filename <- paste("nnls-2dadj-sd01-1delay-", as.numeric(args[1]),".RData", sep = "")
 
 begTime <- Sys.time()
 set.seed(42)
