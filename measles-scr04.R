@@ -90,8 +90,8 @@ lambda2 <- 10^(as.numeric(args[1]) %% 4)
 
 initBeta <- rep(1/7, 7)
 
-mPars <- c(mean(procB) / mean(mData.d[,2]), 0, 400)
-names(mPars) <- c("gamma", "pho0", "pho1")
+mPars <- c(mean(procB) / mean(mData.d[,2]), 0)
+names(mPars) <- c("gamma", "pho0")
 mKappa <- rep(2e-3, 12)
 #mKappa[c(6,7,8)] <- 1e-3
 names(mKappa) <- c("k1", "k2", "k3","k4","k5","k6","k7","k8","k9","k10","k11", "k12")
