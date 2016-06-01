@@ -981,3 +981,110 @@ coverage <- c()
 for(i in 1:length(cov.all)){
     try(coverage <- rbind(coverage, cov.all[[i]]$coverage))
 }
+
+
+
+##################################################
+## Parse 500 nnls fitting results of two adjecent delays, sd = 0.01
+## Simulation script:
+## nnls-16d-2dadj.R
+## Commit: df114f8982bc1c11c228a4de5ca507198df08e66
+## Tue Apr  1 11:50:07 CDT 2014
+##################################################
+
+pars.hat <- beta.hat <- c()
+beta.true <- rep(2,2)
+pars.true <- 0.5
+for(i in 0:19){
+    load(paste("nnls-2dadj-sd02-true-", i, ".RData", sep=""))
+    for(j in 1:25){
+        pars.hat <- c(pars.hat, nnls.res[[j]]$pars)
+        beta.hat <- rbind(beta.hat, nnls.res[[j]]$beta)
+    }
+}
+
+
+library(reshape2)
+library(ggplot2)
+colnames(beta.hat) <- round(seq(0,5, length.out = 16), digits =2)
+beta.df <- melt(as.data.frame(beta.hat))
+pdf(file = "nnls-16d-adj.pdf", width = 9,height = 5)
+ggplot(beta.df ,aes(x = variable,y = value))  + geom_boxplot() + ylab(expression(hat(beta)[GP])) + xlab(expression(tau))
+dev.off()
+
+
+## Covariance:
+Covar.mat <- c()
+for(i in 0:19){
+    load(paste("nnls-2dadj-sd02-true-", i, ".RData", sep=""))
+    for(j in 1:25){
+        if(!is.na(sim.Covar[[j]][1])){
+            Covar.mat <- rbind(Covar.mat, diag(sim.Covar[[j]]))
+        }else{
+            print(i * 20 + j)
+        }
+    }
+}
+
+## Coverage of 95% CI:
+cover.par <- ((pars.hat + 1.96 * sqrt(Covar.mat[,1])) >= 0.5) & ((pars.hat - 1.96 * sqrt(Covar.mat[,1])) <= 0.5)
+cover.beta1 <- ((beta.hat[,1] + 1.96 * sqrt(Covar.mat[,2])) >= 2) & ((beta.hat[,1] - 1.96 * sqrt(Covar.mat[,2])) <= 2)
+cover.beta2 <- ((beta.hat[,2] + 1.96 * sqrt(Covar.mat[,3])) >= 2) & ((beta.hat[,2] - 1.96 * sqrt(Covar.mat[,3])) <= 2)
+sum(cover.par) / 500
+sum(cover.beta1) / 500
+sum(cover.beta2) / 500
+
+sum(cover.beta2 == 0)
+
+
+
+
+##################################################
+## Parse 500 nnls fitting results of one adjecent delays, sd = 0.02
+## Simulation script:
+## nnls-16d-2dadj.R
+## Commit: 00b66d98aa8d339573b1c22cd46b838e2d8e505e
+## Sun Jan 31 17:29:16 CST 2016
+##################################################
+
+pars.hat <- beta.hat <- c()
+beta.true <- c(2)
+pars.true <- 0.5
+for(i in 0:19){
+    load(paste("nnls-2dadj-sd02-1delay-", i, ".RData", sep=""))
+    for(j in 1:25){
+        pars.hat <- c(pars.hat, nnls.res[[j]]$pars)
+        beta.hat <- rbind(beta.hat, nnls.res[[j]]$beta)
+    }
+}
+
+
+library(reshape2)
+library(ggplot2)
+colnames(beta.hat) <- round(seq(0,5, length.out = 16), digits =2)
+beta.df <- melt(as.data.frame(beta.hat))
+pdf(file = "nnls-16d-adj.pdf", width = 9,height = 5)
+ggplot(beta.df ,aes(x = variable,y = value))  + geom_boxplot() + ylab(expression(hat(beta)[GP])) + xlab(expression(tau))
+dev.off()
+
+
+## Covariance:
+Covar.mat <- c()
+for(i in 0:19){
+    load(paste("nnls-2dadj-sd02-1delay-", i, ".RData", sep=""))
+    for(j in 1:25){
+        if(!is.na(sim.Covar[[j]][1])){
+            Covar.mat <- rbind(Covar.mat, diag(sim.Covar[[j]]))
+        }else{
+            print(i * 20 + j)
+        }
+    }
+}
+
+## Coverage of 95% CI:
+cover.par <- ((pars.hat + 1.96 * sqrt(Covar.mat[,1])) >= 0.5) & ((pars.hat - 1.96 * sqrt(Covar.mat[,1])) <= 0.5)
+cover.beta1 <- ((beta.hat[,1] + 1.96 * sqrt(Covar.mat[,2])) >= 2) & ((beta.hat[,1] - 1.96 * sqrt(Covar.mat[,2])) <= 2)
+sum(cover.par) / 500
+sum(cover.beta1) / 500
+
+sum(cover.beta2 == 0)

@@ -3,7 +3,7 @@ library(spam)
 source("./R/make.blowfly.R")
 ## detach("package:limSolve", unload = TRUE)
 
-load("data-blowfly-500.RData")
+load("data-blowfly-250-p1.RData")
 blowfliesfn <- make.blowfly()
 
 blowfly.day <- seq(0,175, 0.5)
@@ -27,12 +27,12 @@ bfdPar0 = fdPar(bbasis0,lambda=1,int2Lfd(1))
 bfdPar.d <- fdPar(bbasis.d,lambda=1,int2Lfd(1))
 args <- commandArgs(TRUE)
 dataRange <- (1 + 25 * as.numeric(args[1])) : (25 * (as.numeric(args[1]) + 1))
-filename <- paste("blowfly-nnls-500-3dealy-true", as.numeric(args[1]),".RData", sep = "")
-tau <- list(seq(6, 10, 2))
-
+filename <- paste("blowfly-nnls-250-1p", as.numeric(args[1]),".RData", sep = "")
+tau <- list(seq(5.5, 10, 0.5))
 
 begTime <- Sys.time()
 nnls.res <- list()
+pre.res <- rep(NA, length(dataRange))
 for(i in 1:length(dataRange)){
     print(dataRange[i])
     blowfly.data <- data.res[[dataRange[i]]]$blowfly.data
@@ -51,18 +51,25 @@ for(i in 1:length(dataRange)){
     DEfd.d <- fd(coefs.d,bbasis.d, fdnames)
 
     lambda <- 10000
-    initBeta <- rep(0, 3)
-    initBeta[2] <- 1
-    initPars <- c(150 / 8, 8 / 8 , 1000)
+    initBeta <- data.res[[dataRange[i]]]$initBeta
+    initPars <- data.res[[dataRange[i]]]$initPars
     names(initPars) <- c("c", "a", "N0")
     try(dde.fit <- Profile.LS.DDE(blowfliesfn, blowfly.data.d, times.d, pars = initPars, beta = initBeta, coefs = coefs.d, basisvals = bbasis.d, lambda = lambda, in.meth='nlminb',  basisvals0 = bbasis0, coefs0 = coefs0, nbeta = length(initBeta), ndelay = 1, tau = tau, control.out = list(method = "nnls.eq", maxIter = 50, lambda.sparse = 0, echo = TRUE)))
     ## DEfd.fit <- fd(dde.fit$res$coefs, bbasis.d)
     ## DDEdiag(y = blowfly.data.d, times = times.d, fitted = DEfd.fit)
     ## plotfit.fd(blowfly.data.d, times.d, DEfd.fit)
+    forecast.fit <- forecast.DDE(blowfly.data.d, times = times.d, h = 1,
+             pars = dde.fit$res$pars,
+             beta = dde.fit$res$beta, proc = dde.fit$proc, more = dde.fit$more,
+             tau = tau, ndelay = 1, fdobj0 = dde.fit$fdobj0, fdobj.d = DEfd.d,
+             ask = FALSE, xlab = "times", ylab = "Population", plot = FALSE)
+    upi <- forecast.fit$res.forecast[[1]]$upper +  forecast.fit$forward.obj[2,1] - forecast.fit$res.forecast[[i]]$mean
+    lpi <- forecast.fit$res.forecast[[1]]$lower +  forecast.fit$forward.obj[2,1] - forecast.fit$res.forecast[[i]]$mean
+    pre.res[i] <- (data.res[[dataRange[i]]]$p1 > lpi) & (data.res[[dataRange[i]]]$p1 < upi)
     nnls.res[[i]] <- dde.fit$res
-    save(nnls.res, file =filename)
+    save(nnls.res, pre.res, file =filename)
 }
 
 runTime <- Sys.time() - begTime
 print(runTime)
-save(nnls.res, runTime, file = filename)
+save(nnls.res, pre.res, runTime, file = filename)

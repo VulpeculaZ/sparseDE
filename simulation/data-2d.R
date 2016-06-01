@@ -44,8 +44,8 @@ data.res <- list()
 for(i in 1:500){
     xout <- c()
     data.res[[i]] <- list()
-    xout <- cbind(xout, yout[,2] + rnorm(length(yout[,2]), sd = 0.02))
-    xout <- cbind(xout, yout[,3] + rnorm(length(yout[,2]), sd = 0.02))
+    xout <- cbind(xout, yout[,2] + rnorm(length(yout[,2]), sd = 0.01))
+    xout <- cbind(xout, yout[,3] + rnorm(length(yout[,2]), sd = 0.01))
     ## points(times, xout)
     xout0 <- xout[times >= 0,]
     data.res[[i]]$xout <- xout
@@ -60,8 +60,6 @@ for(i in 1:500){
     ## points(times0, data.res[[i]]$xout[times > 0,2])
     ## legend("topright", legend = c("S","I"), col=c(1,2), lty = c(2,2), lwd = c(2,2))
     ## dev.off()
-
-
 }
 curseed <- get(".Random.seed", .GlobalEnv)
-save(data.res, DSIR.pars, curseed, file = "data-2dadj-sd02.RData")
+save(data.res, DSIR.pars, curseed, file = "data-1delay-sd01.RData")
