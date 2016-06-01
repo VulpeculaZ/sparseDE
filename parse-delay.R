@@ -711,6 +711,16 @@ for(i in 1:length(cov.all)){
     try(coverage <- rbind(coverage, cov.all[[i]]$coverage))
 }
 
+## test for the prediction coverage
+for(i in 0:19){
+    load(paste("blowfly-nnls-250-", i, ".RData", sep=""))
+    print(length(nnls.res))
+    for(j in 1:length(nnls.res)){
+        pars.hat <- rbind(pars.hat, nnls.res[[j]]$pars)
+        beta.hat <- rbind(beta.hat, nnls.res[[j]]$beta)
+    }
+}
+
 
 ## > colMeans(coverage)
 ##       c        a       N0  beta1.1  beta1.2  beta1.3  beta1.4  beta1.5

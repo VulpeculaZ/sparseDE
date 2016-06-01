@@ -63,8 +63,8 @@ for(i in 1:length(dataRange)){
              beta = dde.fit$res$beta, proc = dde.fit$proc, more = dde.fit$more,
              tau = tau, ndelay = 1, fdobj0 = dde.fit$fdobj0, fdobj.d = DEfd.d,
              ask = FALSE, xlab = "times", ylab = "Population", plot = FALSE)
-    upi <- forecast.fit$res.forecast[[1]]$upper +  forecast.fit$forward.obj[2,1] - forecast.fit$res.forecast[[i]]$mean
-    lpi <- forecast.fit$res.forecast[[1]]$lower +  forecast.fit$forward.obj[2,1] - forecast.fit$res.forecast[[i]]$mean
+    upi <- forecast.fit$res.forecast[[1]]$upper +  forecast.fit$forward.obj[2,1] - forecast.fit$res.forecast[[1]]$mean
+    lpi <- forecast.fit$res.forecast[[1]]$lower +  forecast.fit$forward.obj[2,1] - forecast.fit$res.forecast[[1]]$mean
     pre.res[i] <- (data.res[[dataRange[i]]]$p1 > lpi) & (data.res[[dataRange[i]]]$p1 < upi)
     nnls.res[[i]] <- dde.fit$res
     save(nnls.res, pre.res, file =filename)
